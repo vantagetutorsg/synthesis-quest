@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Synthesis Quest — Vantage Tutor</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<!-- GOOGLE ANALYTICS PLACEHOLDER
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-XXXXXXXXXX');
+</script>
+-->
+
+<style>
+/* ── TOKENS ── */
+:root {
+  --gold:      #C9922A;
+  --gold-lt:   #E8B84B;
+  --gold-dim:  #7A5A1A;
+  --green:     #2ECC71;
+  --red:       #E74C3C;
+  --bg:        #0A0A0A;
+}
+
+/* ── RESET ── */
+*, *::before, *::after {
+  margin: 0; padding: 0; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+html, body {
+  width: 100vw; height: 100vh;
+  max-width: 100vw; max-height: 100vh;
+  overflow: hidden !important;
+  background: #0A0A0A !important;
+  background-color: #0A0A0A !important;
+  font-family: 'Rajdhani', sans-serif;
+  color: #fff;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── SCREENS ── */
+.screen {
+  position: absolute; inset: 0;
+  width: 100vw; height: 100vh;
+  background: #0A0A0A !important;
+  background-color: #0A0A0A !important;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  /* no overflow-y — content must fit */
+  overflow: hidden;
+  padding: clamp(8px, 2vh, 18px) clamp(10px, 2vw, 20px);
+  opacity: 0; pointer-events: none;
+  transition: opacity .35s ease;
+  z-index: 10;
+}
+.screen.active { opacity: 1; pointer-events: all; }
+
+/* ── BACKGROUNDS ── */
+#hex-canvas {
+  position: fixed; inset: 0;
+  z-index: 1; pointer-events: none;
+  background: #0A0A0A;
+}
+.grid-bg {
+  position: fixed; inset: 0;
+  z-index: 2; pointer-events: none;
+  background-image:
+    linear-gradient(rgba(201,146,42,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,146,42,.04) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+#trail-canvas {
+  position: fixed; inset: 0;
+  z-index: 8000; pointer-events: none;
+}
+
+/* ── WATERMARK ── */
+.wm {
+  position: fixed; bottom: 14px; right: 16px;
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(9px,2vw,11px); font-weight: 700;
+  color: var(--gold); opacity: .65;
+  letter-spacing: 2.5px; z-index: 9999;
+  pointer-events: none;
+}
+
+/* ── FULLSCREEN BUTTON — inline on start screen, tablets/desktop only ── */
+.fs-inline-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px;
+  background: rgba(201,146,42,0.1);
+  border: 1px solid rgba(201,146,42,0.45);
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(9px,2vw,11px);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1.5px;
+  transition: background .2s, border-color .2s, transform .15s;
+  user-select: none; -webkit-user-select: none;
+  white-space: nowrap;
+}
+.fs-inline-btn:hover { background: rgba(201,146,42,0.22); border-color: var(--gold); transform: scale(1.05); }
+
+/* ── Best experience banner (start screen only) ── */
+.best-exp-banner {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(10px,2vw,12px);
+  color: rgba(201,146,42,0.55);
+  letter-spacing: 1px;
+  margin-top: clamp(6px,1.2vh,10px);
+  text-align: center;
+}
+
+/* ══════ START SCREEN ══════ */
+#s-start { z-index: 12; }
+.logo-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: clamp(10px,2vh,22px); }
+.logo-hex { width: clamp(56px,8vh,86px); height: clamp(56px,8vh,86px); margin-bottom: clamp(8px,1.5vh,13px); }
+.logo-hex svg { width: 100%; height: 100%; }
+.logo-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(16px,4vw,28px); font-weight: 900;
+  color: var(--gold); letter-spacing: 3px; text-align: center; line-height: 1.1;
+  text-shadow: 0 0 28px rgba(201,146,42,.45);
+}
+.logo-sub { font-size: clamp(9px,2vw,12px); color: rgba(201,146,42,.65); letter-spacing: 5px; margin-top: 4px; }
+.slogan { font-family: 'Space Mono',monospace; font-size: clamp(8px,1.8vw,11px); color: rgba(255,255,255,.38); letter-spacing: 2px; margin-bottom: clamp(12px,2.5vh,26px); text-align: center; }
+
+.field-wrap { width: 100%; max-width: 308px; margin-bottom: clamp(10px,2vh,18px); }
+.field-wrap label { display: block; font-size: 9px; letter-spacing: 3px; color: var(--gold-dim); margin-bottom: 5px; text-transform: uppercase; }
+.field-wrap input {
+  width: 100%; background: rgba(201,146,42,.07);
+  border: 1px solid rgba(201,146,42,.28); border-radius: 5px;
+  padding: clamp(9px,1.6vh,12px) 16px;
+  font-family: 'Rajdhani',sans-serif;
+  font-size: 17px; font-weight: 600; color: #fff; outline: none; text-align: center;
+  transition: border-color .2s, box-shadow .2s;
+}
+.field-wrap input:focus { border-color: var(--gold); box-shadow: 0 0 16px rgba(201,146,42,.16); }
+.field-wrap input::placeholder { color: rgba(255,255,255,.18); }
+
+.btn-gold {
+  width: 100%; max-width: 308px; padding: clamp(10px,1.8vh,14px) 24px;
+  background: linear-gradient(135deg,var(--gold) 0%,#9A6B18 100%);
+  border: none; border-radius: 5px;
+  font-family: 'Orbitron',monospace; font-size: clamp(11px,2.2vw,14px); font-weight: 700;
+  letter-spacing: 3px; color: #0A0A0A; cursor: pointer;
+  position: relative; overflow: hidden;
+  box-shadow: 0 0 22px rgba(201,146,42,.26), 0 3px 10px rgba(0,0,0,.4);
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-gold:hover { transform: translateY(-2px); box-shadow: 0 0 36px rgba(201,146,42,.44), 0 5px 14px rgba(0,0,0,.4); }
+.btn-gold:active { transform: translateY(0); }
+.btn-gold::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.18) 0%,transparent 55%); pointer-events:none; }
+
+.snd-row { margin-top: clamp(8px,1.5vh,16px); display: flex; align-items: center; gap: 10px; }
+.snd-btn {
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  border-radius: 50%; width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 15px; transition: background .2s;
+}
+.snd-btn:hover { background: rgba(201,146,42,.18); }
+.snd-btn.muted { opacity: .4; }
+
+/* ══════ STAGE SELECT ══════ */
+.stage-title { font-family:'Orbitron',monospace; font-size:clamp(13px,3.5vw,18px); font-weight:700; color:var(--gold); letter-spacing:3px; margin-bottom:4px; text-align:center; }
+.stage-sub { font-size:11px; color:rgba(255,255,255,.35); letter-spacing:2px; margin-bottom:clamp(10px,2vh,20px); text-align:center; }
+.stages-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(6px,1.2vh,10px); width:100%; max-width:348px; margin-bottom:clamp(8px,1.5vh,16px); }
+.s-card { border-radius:6px; padding:clamp(8px,1.5vh,14px) 10px; text-align:center; cursor:pointer; transition:transform .2s,box-shadow .2s; }
+.s-card.open { background:linear-gradient(135deg,rgba(201,146,42,.14),rgba(201,146,42,.04)); border:1px solid rgba(201,146,42,.38); }
+.s-card.open:hover { transform:translateY(-2px); box-shadow:0 6px 18px rgba(201,146,42,.18); }
+.s-card.locked { background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); cursor:not-allowed; opacity:.55; }
+.s-num { font-family:'Orbitron',monospace; font-size:9px; letter-spacing:2px; color:var(--gold-dim); margin-bottom:3px; }
+.s-name { font-size:11px; font-weight:600; color:#fff; line-height:1.3; }
+.s-card.locked .s-name { color:rgba(255,255,255,.28); }
+.lock-ico { font-size:15px; margin-bottom:2px; }
+
+.btn-outline {
+  width:100%; max-width:308px; padding:clamp(8px,1.4vh,11px) 20px; background:transparent;
+  border:1px solid rgba(201,146,42,.35); border-radius:5px;
+  font-family:'Orbitron',monospace; font-size:clamp(10px,1.8vw,12px); font-weight:700;
+  letter-spacing:3px; color:var(--gold); cursor:pointer; transition:all .2s; margin-top:6px;
+}
+.btn-outline:hover { background:rgba(201,146,42,.09); border-color:var(--gold); }
+
+/* ══════ GAME SCREEN ══════ */
+#s-game { padding:0; justify-content:flex-start; z-index:12; background:#0A0A0A !important; }
+#game-area { position:absolute; inset:0; overflow:hidden; background:#0A0A0A; }
+
+/* HUD */
+.hud {
+  position:absolute; top:0; left:0; right:0; z-index:200;
+  padding:10px 14px 7px;
+  display:flex; align-items:center; justify-content:space-between; gap:6px;
+  background:linear-gradient(to bottom, rgba(10,10,10,.97) 80%, transparent);
+}
+.hud-timer {
+  font-family:'Orbitron',monospace; font-size:clamp(20px,5vw,28px); font-weight:900;
+  color:var(--gold); min-width:46px;
+  text-shadow:0 0 18px rgba(201,146,42,.4); transition:color .3s;
+}
+.hud-timer.warn { color:var(--red)!important; animation:tpulse .5s infinite alternate; }
+@keyframes tpulse { from{text-shadow:0 0 8px rgba(231,76,60,.3)} to{text-shadow:0 0 22px rgba(231,76,60,.9)} }
+.hud-lives { display:flex; gap:5px; align-items:center; }
+.life { font-size:19px; transition:opacity .3s,transform .3s; }
+.life.dead { opacity:.18; transform:scale(.78); }
+.hud-right { display:flex; align-items:center; gap:8px; }
+.hud-score { font-family:'Orbitron',monospace; font-size:clamp(14px,3.5vw,18px); font-weight:700; color:var(--gold); }
+
+/* Timer bar */
+.tbar-wrap { position:absolute; top:54px; left:10px; right:10px; z-index:200; height:3px; background:rgba(255,255,255,.07); border-radius:2px; }
+.tbar-fill { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--gold),var(--gold-lt)); transition:width 1s linear; }
+
+/* Question banner */
+.q-banner {
+  position:absolute; top:61px; left:10px; right:10px; z-index:200;
+  background:rgba(10,10,10,.93); border:1px solid rgba(201,146,42,.22);
+  border-radius:9px; padding:10px 14px;
+  text-align:center; backdrop-filter:blur(10px);
+}
+.q-label { font-size:9px; letter-spacing:3px; color:var(--gold-dim); margin-bottom:5px; text-transform:uppercase; }
+
+/* Question banner — plain text only */
+.q-text-plain {
+  font-family: 'Space Mono', monospace;
+  font-size: clamp(10px,2.8vw,13px); font-weight: 700;
+  color: #fff; line-height: 1.5; white-space: pre-line;
+}
+
+/* ── FLASK REAGENTS ── */
+.reagent {
+  position:absolute; cursor:pointer;
+  touch-action:none; user-select:none;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  will-change:transform;
+}
+
+/* ── FLASK SHELL ── */
+.flask-shell {
+  position: relative; width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.flask-content {
+  position: relative; z-index: 2;
+  display: flex; align-items: center; justify-content: center;
+  width: 100%; height: 100%; padding: 10px 8px;
+  /* push text into the body of the flask (below the neck) */
+  padding-top: 30%;
+}
+.flask-text {
+  font-family: 'Space Mono', monospace; font-weight: 700;
+  color: rgba(255,255,255,.93); text-align: center;
+  line-height: 1.28; word-break: break-word;
+}
+
+/* ── SLASH ANIMATIONS ── */
+/* Flask flashes bright then snaps invisible — fragments take over the visual */
+@keyframes shatter-ok {
+  0%   { opacity:1; filter:brightness(1);   transform:scale(1); }
+  9%   { opacity:1; filter:brightness(4) drop-shadow(0 0 16px #2ECC71); transform:scale(1.14); }
+  20%  { opacity:0; transform:scale(1.2); }
+  100% { opacity:0; transform:scale(1.2); }
+}
+@keyframes shatter-bad {
+  0%   { opacity:1; filter:brightness(1);   transform:scale(1); }
+  9%   { opacity:1; filter:brightness(3.2) drop-shadow(0 0 12px #E74C3C); transform:scale(1.12); }
+  20%  { opacity:0; transform:scale(1.16); }
+  100% { opacity:0; transform:scale(1.16); }
+}
+.reagent.slash-ok  { animation:shatter-ok  .7s ease-out forwards; pointer-events:none; }
+.reagent.slash-bad { animation:shatter-bad .65s ease-out forwards; pointer-events:none; }
+
+/* Fragment pieces — fly outward, stay large, then fade */
+@keyframes frag-fly {
+  0%   { transform:translate(0,0) rotate(0deg) scale(1);   opacity:1; }
+  55%  { opacity:1; }
+  100% { transform:translate(var(--fx),var(--fy)) rotate(var(--fr)) scale(0.05); opacity:0; }
+}
+/* Shard (thin elongated glass splinter) */
+@keyframes shard-fly {
+  0%   { transform:translate(0,0) rotate(0deg); opacity:1; }
+  55%  { opacity:.95; }
+  100% { transform:translate(var(--fx),var(--fy)) rotate(var(--fr)); opacity:0; }
+}
+/* Glow ring burst */
+@keyframes ring-burst {
+  0%   { transform:scale(0.3); opacity:.9; }
+  100% { transform:scale(2.8); opacity:0; }
+}
+.frag  { position:fixed; pointer-events:none; z-index:9000; animation:frag-fly  .75s cubic-bezier(.15,.85,.2,1)  forwards; }
+.shard { position:fixed; pointer-events:none; z-index:9000; animation:shard-fly .68s cubic-bezier(.1,.9,.25,1) forwards; }
+.ring  { position:fixed; pointer-events:none; z-index:8999; border-radius:50%; border:2px solid; animation:ring-burst .5s ease-out forwards; }
+
+/* Score popup */
+@keyframes spop { 0%{transform:translateY(0) scale(.6);opacity:1} 40%{transform:translateY(-22px) scale(1.2);opacity:1} 100%{transform:translateY(-56px) scale(.9);opacity:0} }
+.spop { position:fixed; font-family:'Orbitron',monospace; font-size:clamp(18px,5vw,26px); font-weight:900; pointer-events:none; z-index:9001; animation:spop .75s ease-out forwards; }
+
+/* Combo */
+@keyframes combo { 0%{opacity:0;transform:translate(-50%,-50%) scale(.4)} 35%{opacity:1;transform:translate(-50%,-50%) scale(1.18)} 70%{opacity:1;transform:translate(-50%,-50%) scale(1)} 100%{opacity:0;transform:translate(-50%,-66%) scale(.84)} }
+.combo-txt { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-family:'Orbitron',monospace; font-size:clamp(26px,7vw,44px); font-weight:900; pointer-events:none; z-index:500; animation:combo .82s ease-out forwards; text-align:center; text-shadow:0 0 20px currentColor; }
+
+/* Shake */
+@keyframes shake { 0%,100%{transform:translateX(0)} 22%{transform:translateX(-8px)} 44%{transform:translateX(8px)} 66%{transform:translateX(-5px)} 88%{transform:translateX(4px)} }
+.shake { animation:shake .28s ease-out; }
+
+/* ══════ RESULT / GAME OVER ══════ */
+.res-hd { font-family:'Orbitron',monospace; font-size:clamp(14px,3.5vw,22px); font-weight:900; color:var(--gold); letter-spacing:3px; margin-bottom:2px; text-align:center; }
+.res-score { font-family:'Orbitron',monospace; font-size:clamp(28px,7vw,46px); font-weight:900; color:var(--gold); text-shadow:0 0 36px rgba(201,146,42,.45); margin:2px 0 2px; }
+.res-name { font-size:clamp(10px,1.8vw,12px); color:rgba(255,255,255,.45); letter-spacing:2px; margin-bottom:clamp(4px,1vh,10px); }
+
+.err-section { width:100%; max-width:390px; max-height:16vh; overflow-y:auto; margin-bottom:clamp(4px,1vh,10px); flex-shrink:0; }
+.err-title { font-size:9px; letter-spacing:3px; color:var(--gold-dim); margin-bottom:6px; text-transform:uppercase; text-align:center; }
+.err-card { background:rgba(231,76,60,.07); border:1px solid rgba(231,76,60,.18); border-radius:5px; padding:6px 10px; margin-bottom:5px; }
+.err-q { font-family:'Space Mono',monospace; font-size:9px; color:rgba(255,255,255,.55); margin-bottom:3px; line-height:1.35; }
+.err-a { font-family:'Space Mono',monospace; font-size:10px; color:var(--green); font-weight:600; }
+.err-a::before { content:'✓ '; }
+.no-err { text-align:center; color:var(--green); font-size:11px; padding:6px; letter-spacing:1px; }
+
+.btn-wa {
+  width:100%; max-width:308px; padding:13px 22px;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  border:none; border-radius:5px;
+  font-family:'Orbitron',monospace; font-size:11px; font-weight:700;
+  letter-spacing:2px; color:#fff; cursor:pointer; margin-top:8px;
+  text-decoration:none; display:flex; align-items:center; justify-content:center; gap:7px;
+  box-shadow:0 4px 18px rgba(37,211,102,.22); transition:all .2s;
+}
+/* ── Grand Finale card ── */
+@keyframes gf-border {
+  0%,100% { box-shadow: 0 0 12px rgba(201,146,42,.7), 0 0 28px rgba(201,146,42,.3), inset 0 0 8px rgba(201,146,42,.15); border-color: var(--gold); }
+  50%      { box-shadow: 0 0 22px rgba(232,184,75,1),  0 0 50px rgba(201,146,42,.5), inset 0 0 16px rgba(201,146,42,.2); border-color: var(--gold-lt); }
+}
+.gf-card {
+  grid-column: 1 / -1; /* full width */
+  border-radius: 9px; padding: 18px 16px;
+  text-align: center; cursor: pointer;
+  transition: transform .2s;
+  margin-top: 4px;
+}
+.gf-card.gf-open {
+  background: linear-gradient(135deg, rgba(201,146,42,.2), rgba(201,146,42,.06));
+  border: 2px solid var(--gold);
+  animation: gf-border 2s ease-in-out infinite;
+}
+.gf-card.gf-open:hover { transform: translateY(-3px); }
+.gf-card.gf-locked {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  cursor: not-allowed; opacity: .5;
+}
+.gf-label {
+  font-family: 'Orbitron', monospace; font-size: clamp(14px,4vw,18px); font-weight: 900;
+  color: var(--gold); letter-spacing: 3px; margin-bottom: 4px;
+}
+.gf-sub { font-size: 11px; color: rgba(255,255,255,.45); letter-spacing: 1.5px; }
+
+/* ── Score share card ── */
+.share-card {
+  width: 100%; max-width: 340px;
+  background: rgba(201,146,42,.1);
+  border: 1px solid rgba(201,146,42,.35);
+  border-radius: 8px; padding: clamp(8px,1.5vh,14px);
+  margin: clamp(4px,1vh,10px) 0; text-align: center; flex-shrink: 0;
+}
+.share-card-title {
+  font-family: 'Orbitron', monospace; font-size: 10px; font-weight: 700;
+  color: var(--gold); letter-spacing: 2px; margin-bottom: 6px; text-transform: uppercase;
+}
+.share-qr { margin: 4px auto; display: block; }
+.share-qr-caption {
+  font-size: 10px; color: rgba(255,255,255,.5); margin-top: 5px;
+  letter-spacing: .5px; line-height: 1.4;
+}
+.share-btns { display: flex; gap: 6px; margin-top: 8px; justify-content: center; }
+.share-btn {
+  flex: 1; max-width: 130px; padding: 7px 6px;
+  border: none; border-radius: 5px;
+  font-family: 'Orbitron', monospace; font-size: 9px; font-weight: 700;
+  letter-spacing: 1px; cursor: pointer; text-decoration: none;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  transition: transform .15s, opacity .15s;
+}
+.share-btn:hover { transform: translateY(-2px); opacity: .9; }
+.share-btn-wa { background: #25D366; color: #fff; }
+.share-btn-tg { background: #2AABEE; color: #fff; }
+
+/* ── Multi-answer counter ── */
+.multi-counter {
+  position: absolute; top: 6px; right: 10px; z-index: 201;
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(11px,3vw,14px); font-weight: 700;
+  color: var(--gold-lt);
+  letter-spacing: 1px;
+  text-shadow: 0 0 10px rgba(201,146,42,.5);
+}
+/* Flask dimmed once slashed correctly in multi-answer */
+.reagent.slash-multi {
+  animation: shatter-ok .55s ease-out forwards;
+  pointer-events: none;
+}
+</style>
+</head>
+<body>
+
+<canvas id="hex-canvas"></canvas>
+<div class="grid-bg"></div>
+<canvas id="trail-canvas"></canvas>
+<div class="wm">VANTAGE TUTOR</div>
+
+
+<!-- START -->
+<div id="s-start" class="screen active">
+  <div class="logo-wrap">
+    <div class="logo-hex">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs><linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#C9922A"/><stop offset="100%" stop-color="#7A5A1A"/></linearGradient></defs>
+        <polygon points="50,5 90,27.5 90,72.5 50,95 10,72.5 10,27.5" fill="none" stroke="url(#hg)" stroke-width="2.5"/>
+        <polygon points="50,14 82,31.5 82,66.5 50,84 18,66.5 18,31.5" fill="rgba(201,146,42,0.06)" stroke="rgba(201,146,42,0.28)" stroke-width="1"/>
+        <text x="50" y="44" text-anchor="middle" font-family="Orbitron,monospace" font-size="14" font-weight="900" fill="#C9922A">V</text>
+        <text x="50" y="62" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="9" font-weight="600" fill="rgba(201,146,42,0.65)" letter-spacing="3">TUTOR</text>
+      </svg>
+    </div>
+    <div class="logo-title">SYNTHESIS<br>QUEST</div>
+    <div class="logo-sub">by Vantage Tutor</div>
+  </div>
+  <div class="slogan">"A CLASS ABOVE THE REST"</div>
+  <div class="field-wrap">
+    <label>YOUR NAME</label>
+    <input id="player-name" type="text" placeholder="Enter your name" maxlength="20" autocomplete="off">
+  </div>
+  <button class="btn-gold" onclick="startGame()">▶ &nbsp;PLAY NOW</button>
+  <div class="snd-row">
+    <div class="snd-btn" id="snd0" onclick="toggleSound()">🔊</div>
+    <span style="font-size:11px;color:rgba(255,255,255,.28);letter-spacing:1px">SOUND</span>
+    <div class="fs-inline-btn" id="fs-btn" onclick="toggleFullscreen()" title="Toggle Fullscreen">⛶ FULLSCREEN</div>
+  </div>
+  <div class="best-exp-banner">✨ Best experience on iPad and Desktop</div>
+</div>
+
+<!-- STAGE SELECT -->
+<div id="s-stage" class="screen">
+  <div class="stage-title">SELECT STAGE</div>
+  <div class="stage-sub">H2 CHEMISTRY 9729</div>
+  <div class="stages-grid" id="stages-grid"></div>
+  <button class="btn-outline" onclick="show('s-start')">← BACK</button>
+</div>
+
+<!-- GAME -->
+<div id="s-game" class="screen">
+  <div id="game-area"></div>
+  <div class="hud">
+    <div class="hud-timer" id="hud-timer">30</div>
+    <div class="hud-lives"><span class="life" id="l1">⚗️</span><span class="life" id="l2">⚗️</span><span class="life" id="l3">⚗️</span></div>
+    <div class="hud-right">
+      <div class="hud-score" id="hud-score">0</div>
+      <div class="snd-btn" id="snd1" onclick="toggleSound()">🔊</div>
+    </div>
+  </div>
+  <div class="tbar-wrap"><div class="tbar-fill" id="tbar"></div></div>
+  <div class="q-banner" id="q-banner">
+    <div class="q-label">SLASH THE CORRECT ANSWER</div>
+    <div id="q-content"></div>
+  </div>
+</div>
+
+<!-- STAGE COMPLETE -->
+<div id="s-result" class="screen">
+  <div class="res-hd" id="res-hd">STAGE COMPLETE</div>
+  <div class="res-score" id="res-score">0</div>
+  <div class="res-name" id="res-name"></div>
+  <div class="err-section"><div class="err-title">REVIEW — INCORRECT ANSWERS</div><div id="err-list"></div></div>
+
+  <!-- Share card -->
+  <div class="share-card">
+    <div class="share-card-title">🏆 SHARE YOUR SCORE</div>
+    <img class="share-qr" id="share-qr" src="" width="90" height="90" alt="QR code">
+    <div class="share-qr-caption">Submit your score &amp; win a spot on the leaderboard</div>
+    <div class="share-btns">
+      <a id="share-wa" class="share-btn share-btn-wa" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <a id="share-tg" class="share-btn share-btn-tg" href="#" target="_blank" rel="noopener">✈️ Telegram</a>
+    </div>
+  </div>
+
+  <button class="btn-gold" onclick="launchStage(G.stageNum)" style="margin-bottom:8px">↺ PLAY AGAIN</button>
+  <button class="btn-outline" onclick="show('s-stage')">STAGE SELECT</button>
+</div>
+
+<!-- GAME OVER -->
+<div id="s-over" class="screen">
+  <div class="res-hd" style="color:var(--red)">GAME OVER</div>
+  <div class="res-score" id="over-score">0</div>
+  <div class="res-name" id="over-name"></div>
+  <div class="err-section"><div class="err-title">REVIEW — INCORRECT ANSWERS</div><div id="over-err-list"></div></div>
+
+  <!-- Share card -->
+  <div class="share-card">
+    <div class="share-card-title">📊 SHARE YOUR SCORE</div>
+    <img class="share-qr" id="over-share-qr" src="" width="90" height="90" alt="QR code">
+    <div class="share-qr-caption">Submit your score &amp; win a spot on the leaderboard</div>
+    <div class="share-btns">
+      <a id="over-share-wa" class="share-btn share-btn-wa" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <a id="over-share-tg" class="share-btn share-btn-tg" href="#" target="_blank" rel="noopener">✈️ Telegram</a>
+    </div>
+  </div>
+
+  <button class="btn-gold" onclick="launchStage(G.stageNum)" style="margin-bottom:8px">↺ TRY AGAIN</button>
+  <a class="btn-wa" href="https://wa.me/6589281330" target="_blank" rel="noopener">💬 BOOK FREE CONSULTATION</a>
+  <button class="btn-outline" onclick="show('s-stage')">STAGE SELECT</button>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════════
+// MOLECULE DISPLAY NAMES — condensed structural text only
+// No SVG anywhere. All molecules shown as plain text.
+// ═══════════════════════════════════════════════════════
+const MOL_TEXT = {
+  bromoethane:   'CH₃CH₂Br',
+  ethanol:       'CH₃CH₂OH',
+  propionitrile: 'CH₃CH₂CN',
+  ethene:        'CH₂=CH₂',
+  ethylamine:    'CH₃CH₂NH₂',
+  tBuBr:         '(CH₃)₃CBr',
+  methylpropene: '(CH₃)₂C=CH₂',
+  chloroethane:  'CH₃CH₂Cl',
+  iodoethane:    'CH₃CH₂I',
+  fluoroethane:  'CH₃CH₂F',
+};
+function molTxt(key){ return MOL_TEXT[key] || key; }
+
+// ═══════════════════════════════════════════════════════
+// QUESTION DATA — per stage
+// multi: true = multiple correct answers (answers: [])
+// single: answer string (answer: '')
+// ═══════════════════════════════════════════════════════
+
+const STAGE1 = [
+  { questionText:'CH₃CH₂Br → CH₃CH₂OH\nSlash the reagent / condition:', answer:'NaOH(aq), heat', dist:['KOH(alc), heat','KCN, ethanol, heat','NH₃(alc), heat','AgNO₃(aq), ethanol'] },
+  { questionText:'CH₃CH₂Br → CH₃CH₂CN\nSlash the reagent / condition:', answer:'KCN, ethanol, heat', dist:['NaOH(aq), heat','AgNO₃(aq), ethanol','NH₃(alc), heat','KOH(alc), heat'] },
+  { questionText:'CH₃CH₂Br → CH₃CH₂NH₂\nSlash the reagent / condition:', answer:'Excess NH₃, ethanol, heat', dist:['NaOH(aq), heat','KCN, ethanol, heat','KOH(alc), heat','AgNO₃(aq), ethanol'] },
+  { questionText:'CH₃CH₂Br → CH₂=CH₂\nSlash the reagent / condition:', answer:'KOH(alc), heat', dist:['NaOH(aq), heat','NH₃(alc), heat','KCN, ethanol, heat','AgNO₃(aq), ethanol'] },
+  { questionText:'CH₃CH₂Br → (CH₃CH₂)₂NH\nSlash the reagent / condition:', answer:'Excess NH₃, ethanol, heat', dist:['NaOH(aq), heat','KOH(alc), heat','KCN, ethanol, heat'] },
+  { questionText:'(CH₃)₃CBr → (CH₃)₂C=CH₂\nSlash the reagent / condition:', answer:'KOH(alc), heat', dist:['NaOH(aq), heat','KCN, ethanol, heat','NH₃(alc), heat'] },
+  { questionText:'CH₃CH₂Br + KCN, ethanol, heat → ?\nSlash the correct product:', answer:'CH₃CH₂CN', dist:['CH₃CH₂OH','CH₃CH₂NH₂','CH₂=CH₂','CH₃CH₂Cl'] },
+  { questionText:'CH₃CH₂Br + KOH(alc), heat → ?\nSlash the correct product:', answer:'CH₂=CH₂', dist:['CH₃CH₂OH','CH₃CH₂CN','CH₃CH₂Cl','CH₃CH₂Br'] },
+  { questionText:'CH₃CH₂Br + Excess NH₃, ethanol, heat → ?\nSlash the correct product:', answer:'CH₃CH₂NH₂', dist:['CH₃CH₂OH','CH₂=CH₂','CH₃CH₂CN','CH₃CH₂Cl'] },
+  { questionText:'Which distinguishing test\nidentifies halogenoalkanes?', answer:'NaOH(aq), AgNO₃(aq), heat', dist:['KCN, ethanol, heat','KOH(alc), heat','Br₂(aq)','NH₃, ethanol, heat'] },
+  { questionText:'Which halogenoalkane hydrolyses\nfastest with AgNO₃(aq)?', answer:'C₂H₅I', dist:['C₂H₅Cl','C₂H₅Br','C₂H₅F'] },
+  { questionText:'Observation when C₂H₅Br reacts with\nNaOH(aq), dilute HNO₃, AgNO₃(aq), heat?', answer:'Cream precipitate', dist:['White precipitate','Yellow precipitate','No precipitate'] },
+  { questionText:'Which halogenoalkane gives\nCREAM precipitate with AgNO₃(aq)?', answer:'C₂H₅Br', dist:['C₂H₅Cl','C₂H₅I','C₂H₅F'] },
+  { questionText:'Why does C–I bond hydrolyse\nfaster than C–Cl?', answer:'C–I bond has lower bond energy', dist:['C–I bond is more polar','C–I bond is shorter','I is more electronegative'] },
+  { questionText:'Which condition favours\nELIMINATION over substitution?', answer:'NaOH, ethanol, heat', dist:['KOH(alc), heat','NaOH(aq), warm','KCN(aq)','AgNO₃(aq)'] },
+  { questionText:'C₂H₅Cl + NaOH(aq), dilute HNO₃, AgNO₃(aq), heat\nWhat is observed?', answer:'White precipitate', dist:['Cream precipitate','Yellow precipitate','Purple to colourless','Reddish brown to colourless','Effervescence'] },
+  { questionText:'C₂H₅I + NaOH(aq), dilute HNO₃, AgNO₃(aq), heat\nWhat is observed?', answer:'Yellow precipitate', dist:['White precipitate','Cream precipitate','No precipitate','Effervescence'] },
+  { questionText:'C₂H₅Br + NaOH(aq), dilute HNO₃, AgNO₃(aq), heat\nWhat is observed?', answer:'Cream precipitate', dist:['White precipitate','Yellow precipitate','No precipitate','Reddish brown to colourless'] }
+];
+
+const STAGE2 = [
+  { questionText:'Which reagent distinguishes\naldehyde from ketone?', answer:"Fehling's solution", dist:["Tollens' reagent","2,4-DNPH","Acidified KMnO₄"] },
+  { questionText:'What is observed when ethanal\nreacts with Tollens\' reagent?', answer:'Silver mirror on test tube', dist:['Brick-red precipitate','Yellow precipitate','Blue to colourless'] },
+  { questionText:'What is observed when ethanal\nreacts with Fehling\'s solution?', answer:'Brick-red precipitate', dist:['Silver mirror','No change','Blue precipitate'] },
+  { questionText:'What is observed when propanone\nreacts with Fehling\'s solution?', answer:'No change', dist:['Brick-red precipitate','Silver mirror','Blue precipitate'] },
+  { questionText:'Which reagent identifies\nBOTH aldehydes AND ketones?', answer:'2,4-DNPH', dist:["Tollens' reagent","Fehling's solution","Acidified KMnO₄"] },
+  { questionText:'What is observed when ethanal\nreacts with 2,4-DNPH?', answer:'Orange/yellow precipitate', dist:['Silver mirror','Brick-red precipitate','No change'] },
+  { questionText:'Which compound gives\na positive iodoform test?', answer:'CH₃CHO', dist:['HCHO','CH₃CH₂CHO','CH₂=CHCHO'] },
+  { questionText:'What is observed in\na positive iodoform test?', answer:'Yellow precipitate of CHI₃', dist:['White precipitate','Cream precipitate','Orange precipitate'] },
+  { questionText:'Which reagent distinguishes\nethanal from benzaldehyde?', answer:"Fehling's solution", dist:["Tollens' reagent","2,4-DNPH","LiAlH₄, dry ether"] },
+  { questionText:'Convert CH₃CHO → CH₃CH(OH)CN\nSlash the reagent / condition:', answer:'KCN/HCN, H⁺', dist:['LiAlH₄, dry ether','NaOH(aq)','KOH(alc)'] },
+  { questionText:'Convert CH₃CH(OH)CN → CH₃CH(OH)COOH\nSlash the reagent / condition:', answer:'H₃O⁺, heat', dist:['LiAlH₄, dry ether','NaOH(aq)','KCN'] },
+  { questionText:'Which reagent reduces CH₃CH(OH)CN\nto an amino alcohol?\nSlash ALL correct answers:', multi:true, answers:['LiAlH₄, dry ether','H₂(g), Ni, heat'], dist:['H₃O⁺, heat','KOH(alc)','NaOH(aq)'] },
+  { questionText:'Convert CH₃CHO → CH₃CH₂OH\nSlash the reagent / condition:', answer:'LiAlH₄, dry ether', dist:['KOH(alc), heat','KCN, ethanol','H₂O, heat'] },
+  { questionText:'Convert CH₃COCH₃ → CH₃CH(OH)CH₃\nSlash the reagent / condition:', answer:'LiAlH₄, dry ether', dist:["Tollens' reagent","Fehling's solution","KMnO₄"] },
+  { questionText:'Which type of alcohol is formed\nwhen an aldehyde is reduced?', answer:'Primary alcohol', dist:['Secondary alcohol','Tertiary alcohol','Carboxylic acid'] },
+  { questionText:'Which type of alcohol is formed\nwhen a ketone is reduced?', answer:'Secondary alcohol', dist:['Primary alcohol','Tertiary alcohol','Carboxylic acid'] },
+  { questionText:'Which compounds give a positive result\nwith Tollens\' reagent?\nSlash ALL correct answers:', multi:true, answers:['CH₃CHO','HCHO'], dist:['CH₃COCH₃','CH₃CH₂OH','CH₃COOH'] },
+  { questionText:'Which compounds give a positive\niodoform test?\nSlash ALL correct answers:', multi:true, answers:['CH₃CHO','CH₃COCH₃','CH₃CH₂OH'], dist:['HCHO','CH₃CH₂CHO','CH₃COOH'] }
+];
+
+const STAGE3 = [
+  // ── Oxidation — observation ──
+  { questionText:'What is observed when ethanol is oxidised\nwith acidified K₂Cr₂O₇, heat?', answer:'Orange to green', dist:['Purple to colourless','No change','Blue to colourless','Green to orange'] },
+  { questionText:'What is observed when a tertiary alcohol\nreacts with acidified K₂Cr₂O₇?', answer:'No change', dist:['Orange to green','Purple to colourless','Blue to colourless','Green to orange'] },
+  { questionText:'What is observed when a secondary alcohol\nis oxidised with acidified K₂Cr₂O₇?', answer:'Orange to green', dist:['No change','Purple to colourless','Blue to colourless'] },
+
+  // ── Oxidation — product control ──
+  { questionText:'Convert CH₃CH₂OH → CH₃CHO\nSlash the correct reagent / condition:', answer:'Acidified K₂Cr₂O₇, heat, immediate distillation', dist:['Acidified K₂Cr₂O₇, reflux','Acidified KMnO₄, reflux','Acidified K₂Cr₂O₇, heat'] },
+  { questionText:'Convert CH₃CH₂OH → CH₃COOH\nSlash the correct reagent / condition:', answer:'Acidified K₂Cr₂O₇, reflux', dist:['Acidified K₂Cr₂O₇, heat, immediate distillation','Acidified KMnO₄, heat, distil','LiAlH₄, dry ether'] },
+  { questionText:'Convert CH₃CH₂OH → CH₃COOH\nusing KMnO₄. Slash the correct condition:', answer:'Acidified KMnO₄, reflux', dist:['Acidified KMnO₄, heat, distil','Acidified K₂Cr₂O₇, reflux','KMnO₄(aq), r.t.p'] },
+  { questionText:'Why must product be distilled immediately\nwhen oxidising alcohol to aldehyde?', answer:'Prevent further oxidation to carboxylic acid', dist:['Increase yield of alcohol','Prevent reduction of aldehyde','Remove water from reaction mixture'] },
+  { questionText:'Secondary alcohol + acidified K₂Cr₂O₇, reflux → ?\nSlash the correct product:', answer:'Ketone', dist:['Aldehyde','Carboxylic acid','No reaction'] },
+  { questionText:'Which type of alcohol cannot be oxidised\nby acidified K₂Cr₂O₇?', answer:'Tertiary alcohol', dist:['Primary alcohol','Secondary alcohol','All can be oxidised'] },
+
+  // ── Iodoform test ──
+  { questionText:'Which structural feature gives\na positive iodoform test?', answer:'CH₃CH(OH)– group', dist:['–OH group only','–CHO group','–COOH group'] },
+  { questionText:'Which alcohol gives a positive iodoform test?', answer:'CH₃CH(OH)CH₃', dist:['CH₃CH₂CH₂OH','(CH₃)₃COH','Methyl ethanoate'] },
+  { questionText:'What is observed in a positive iodoform test?', answer:'Yellow precipitate of CHI₃', dist:['White precipitate','Cream precipitate','Orange precipitate','No change'] },
+  { questionText:'Ethanol + I₂/NaOH → ?\nSlash the correct observation:', answer:'Yellow precipitate of CHI₃', dist:['No change','Orange to green','White precipitate','Cream precipitate'] },
+  { questionText:'Which of these gives a positive iodoform test?\nSlash ALL correct answers:', multi:true, answers:['CH₃CH(OH)CH₃','CH₃CH₂OH'], dist:['CH₃CH₂CH₂OH','(CH₃)₃COH','HOCH₂CH₂OH'] },
+
+  // ── Chlorination of alcohols ──
+  { questionText:'Convert CH₃CH₂OH → CH₃CH₂Cl using PCl₅\nSlash the correct condition:', answer:'PCl₅, dry', dist:['PCl₅(aq), heat','PCl₅, reflux','PCl₅(aq), r.t.p'] },
+  { questionText:'Convert CH₃CH₂OH → CH₃CH₂Cl using PCl₃\nSlash the correct condition:', answer:'PCl₃, dry, r.t.p', dist:['PCl₃(aq), heat','PCl₃, reflux','PCl₃, heat'] },
+  { questionText:'Convert CH₃CH₂OH → CH₃CH₂Cl using SOCl₂\nSlash the correct condition:', answer:'SOCl₂, dry', dist:['SOCl₂(aq), heat','SOCl₂, reflux','SOCl₂, r.t.p, aqueous'] },
+  { questionText:'Why must conditions be DRY\nwhen using PCl₃, PCl₅ or SOCl₂?', answer:'Water hydrolyses the reagent', dist:['Water oxidises the alcohol','Water reduces the product','Dry conditions speed up the reaction'] },
+  { questionText:'Which reagents convert CH₃CH₂OH\nto chloroethane?\nSlash ALL correct answers:', multi:true, answers:['PCl₃, dry, r.t.p','PCl₅, dry','SOCl₂, dry'], dist:['HCl(aq)','NaOH(aq)','Conc. H₂SO₄, heat'] },
+
+  // ── Dehydration / elimination ──
+  { questionText:'Convert CH₃CH₂OH → CH₂=CH₂\nSlash the correct reagent / condition:', answer:'Excess conc. H₂SO₄, 170°C', dist:['Dilute H₂SO₄, r.t.p','KOH(alc), heat','Conc. H₂SO₄, r.t.p'] },
+  { questionText:'What type of reaction is\ndehydration of alcohol to alkene?', answer:'Elimination', dist:['Substitution','Addition','Oxidation'] },
+  { questionText:'Which alcohol gives more than one\nalkene product on dehydration?', answer:'Butan-2-ol', dist:['Ethanol','Methanol','Propan-1-ol'] },
+
+  // ── Multi-answer recap ──
+  { questionText:'Which types of alcohol are oxidised\nby acidified K₂Cr₂O₇?\nSlash ALL correct answers:', multi:true, answers:['Primary alcohol','Secondary alcohol'], dist:['Tertiary alcohol','Phenol','Ether'] }
+];
+
+const STAGE4 = [
+  // ── Acyl chloride reactions — products ──
+  { questionText:'CH₃COCl + H₂O → ?\nSlash the correct products:', answer:'CH₃COOH + HCl', dist:['CH₃COOC₂H₅ + HCl','CH₃CONH₂ + HCl','CH₃OH + CO₂'] },
+  { questionText:'CH₃COCl + CH₃CH₂OH → ?\nSlash the correct products:', answer:'CH₃COOC₂H₅ + HCl', dist:['CH₃COOH + HCl','CH₃CONH₂ + HCl','CH₃COO⁻ + H₂'] },
+  { questionText:'CH₃COCl + NH₃ → ?\nSlash the correct products:', answer:'CH₃CONH₂ + HCl', dist:['CH₃COOH + NH₄Cl','CH₃NH₂ + CO₂','CH₃COOC₂H₅ + HCl'] },
+  { questionText:'CH₃COCl + CH₃NH₂ → ?\nSlash the correct products:', answer:'CH₃CONHCH₃ + HCl', dist:['CH₃CONH₂ + HCl','CH₃COOH + CH₃NH₂','CH₃NHCHO + HCl'] },
+
+  // ── Acyl chloride reactions — observation ──
+  { questionText:'What is observed when ethanoyl chloride\nis added to water?', answer:'Steamy fumes of HCl, vigorous reaction', dist:['No visible change','Effervescence only','White precipitate'] },
+  { questionText:'What is observed when ethanoyl chloride\nis added to ethanol?', answer:'Vigorous reaction, white fumes produced', dist:['No reaction','Slow reaction, no fumes','Effervescence'] },
+  { questionText:'Which carboxylic acid derivative\nproduces the lowest pH in water?', answer:'Acyl chloride', dist:['Ester','Amide','Carboxylic acid itself'] },
+  { questionText:'Why does acyl chloride produce\na lower pH than ethanoic acid in water?', answer:'HCl produced', dist:['Weak acid produced','No ions produced','OH⁻ produced'] },
+
+  // ── Ease of hydrolysis ──
+  { questionText:'Which carboxylic acid derivative\nhydrolyses most easily?', answer:'Acyl chloride', dist:['Ester','Amide','Carboxylic acid'] },
+  { questionText:'Which bond breaks during\nhydrolysis of an acyl chloride?', answer:'C–Cl bond', dist:['C=O bond','C–O bond','O–H bond'] },
+
+  // ── Esterification ──
+  { questionText:'Convert CH₃COOH + CH₃CH₂OH → ester\nSlash the correct reagent / condition:', answer:'Conc. H₂SO₄, heat', dist:['NaOH(aq), heat','Dilute H₂SO₄, r.t.p','KOH(alc), heat'] },
+  { questionText:'Convert CH₃COCl + CH₃CH₂OH → ester\nSlash the correct reagent / condition:', answer:'Dry, r.t.p', dist:['Conc. H₂SO₄, heat','NaOH(aq)','Heat, reflux'] },
+  { questionText:'Esterification of carboxylic acid + alcohol\nis an example of which reaction type?', answer:'Condensation', dist:['Addition','Elimination','Substitution'] },
+  { questionText:'Which reagent is used to hydrolyse\nan ester under acidic conditions?', answer:'Dilute H₂SO₄, reflux', dist:['NaOH(aq), heat','Conc. H₂SO₄, r.t.p','KOH(alc), heat'] },
+  { questionText:'What are the products of\nbase hydrolysis of an ester?', answer:'R-COO⁻ and R-OH', dist:['R-COOH and R-OH','R-COCl and R-OH','R-CHO and R-OH'] },
+
+  // ── Amide formation ──
+  { questionText:'CH₃COOH + NH₃ → ?\nSlash the correct product on gentle heating:', answer:'CH₃COONH₄ (ammonium salt)', dist:['CH₃CONH₂','CH₃NH₂ + CO₂','CH₃COCl + H₂O'] },
+  { questionText:'CH₃COONH₄ + strong heat → ?\nSlash the correct product:', answer:'CH₃CONH₂ + H₂O', dist:['CH₃COOH + NH₃','CH₃NH₂ + CO₂','CH₃COCl + H₂O'] },
+
+  // ── Reactions with bases / metals ──
+  { questionText:'CH₃COOH + NaOH → ?\nSlash the correct products:', answer:'CH₃COONa + H₂O', dist:['CH₃COONa + H₂','CH₃OH + CO₂','CH₃COCl + NaOH'] },
+  { questionText:'CH₃COOH + Na → ?\nSlash the correct products:', answer:'CH₃COONa + H₂', dist:['CH₃COONa + H₂O','CH₃OH + Na₂CO₃','CH₃COCl + H₂'] },
+  { questionText:'CH₃COOH + Na₂CO₃ → ?\nSlash the correct observation:', answer:'Effervescence — CO₂ produced', dist:['No reaction','Orange to green','White precipitate','Yellow precipitate'] },
+
+  // ── Comparison / multi ──
+  { questionText:'Which reactions of ethanoic acid produce\na gas?\nSlash ALL correct answers:', multi:true, answers:['CH₃COOH + Na → H₂','CH₃COOH + Na₂CO₃ → CO₂'], dist:['CH₃COOH + NaOH','CH₃COOH + CH₃CH₂OH','CH₃COOH + NH₃'] },
+  { questionText:'Which conditions correctly describe\nhydrolysis of acyl chloride?', answer:'Water, r.t.p — vigorous, no catalyst needed', dist:['Water, reflux, H₂SO₄ catalyst','Water, heat — slow reaction','Water, NaOH — no reaction'] },
+  { questionText:'Acyl chloride vs carboxylic acid\nadded to water — which statement is correct?', answer:'Acyl chloride reacts vigorously; carboxylic acid ionises partially', dist:['Both react at the same rate','Carboxylic acid reacts faster','Neither reacts with water'] },
+  { questionText:'Which TWO routes produce a carboxylic acid?\nSlash ALL correct answers:', multi:true, answers:['Hydrolysis of −CN','Oxidation of primary alcohol under reflux'], dist:['Reduction of aldehyde','Elimination of alcohol',"Fehling's test"] },
+  { questionText:'Which compounds react with a primary amine?\nSlash ALL correct answers:', multi:true, answers:['Acyl chloride','Carboxylic acid'], dist:['Ester','Alcohol','Alkene'] }
+];
+
+const STAGE5 = [
+  // ── Basicity comparisons ──
+  { questionText:'Which is more basic —\nCH₃NH₂ or (CH₃)₂NH?', answer:'(CH₃)₂NH', dist:['CH₃NH₂','Both equal','Cannot be compared'] },
+  { questionText:'Which is more basic —\nCH₃NH₂ or C₆H₅NH₂?', answer:'CH₃NH₂', dist:['C₆H₅NH₂','Both equal','Depends on concentration'] },
+  { questionText:'Which is more basic —\nCH₃NH₂ or CH₃CONH₂?', answer:'CH₃NH₂', dist:['CH₃CONH₂','Both equal','Amide is always more basic'] },
+
+  // ── Basicity reasoning ──
+  { questionText:'Why is (CH₃)₂NH more basic than CH₃NH₂?', answer:'Extra alkyl group donates electrons increasing electron density on N', dist:['Extra alkyl group withdraws electrons','N has more lone pairs','Extra alkyl group increases steric hindrance'] },
+  { questionText:'Why is C₆H₅NH₂ less basic than CH₃NH₂?', answer:'Lone pair on N delocalised into benzene ring reducing availability for protonation', dist:['Lone pair on N is more exposed','Benzene ring donates electrons to N','N forms stronger hydrogen bonds in C₆H₅NH₂'] },
+  { questionText:'Why is CH₃CONH₂ less basic than CH₃NH₂?', answer:'Lone pair on N delocalised into C=O reducing availability for protonation', dist:['C=O donates electrons to N','Amide has no lone pair on N','N is more electronegative in amide'] },
+
+  // ── Reactions of amines ──
+  { questionText:'What is formed when CH₃NH₂\nreacts with CH₃COOH?', answer:'Ammonium salt', dist:['Amide','Ester','Alcohol'] },
+  { questionText:'Which reagent reacts with a primary amine\nto form an amide directly?', answer:'Acyl chloride', dist:['Carboxylic acid','Ester','Alcohol'] },
+
+  // ── Amide hydrolysis — multi-answer ──
+  { questionText:'Products when CH₃CONH₂ is hydrolysed\nwith dilute HCl, heat?\nSlash ALL correct answers:', multi:true, answers:['CH₃COOH','NH₄⁺'], dist:['CH₃COO⁻','NH₂','CH₃OH','NH₃'] },
+  { questionText:'Products when CH₃CONH₂ is hydrolysed\nwith NaOH, heat?\nSlash ALL correct answers:', multi:true, answers:['CH₃COO⁻','NH₃'], dist:['CH₃COOH','NH₄⁺','CH₃OH','NH₂'] },
+
+  // ── Peptide bonds ──
+  { questionText:'What type of bond forms between\ntwo amino acids in lab synthesis?', answer:'Amide (peptide) bond', dist:['Ester bond','Ionic bond','Hydrogen bond'] },
+  { questionText:'Which functional groups react to form\na peptide bond in lab synthesis?', answer:'NH₂ and acyl chloride', dist:['COOH and NH₂','OH and COOH','NH₂ and OH'] },
+
+  // ── Zwitterions ──
+  { questionText:'What is a zwitterion?', answer:'A molecule with both positive and negative charges but overall neutral', dist:['A molecule that only exists at pH 7','A molecule with two of the same functional groups','A molecule that cannot dissolve in water'] },
+  { questionText:'At what pH does an amino acid\nexist as a zwitterion?', answer:'At its isoelectric point (pI)', dist:['At pH 7 always','At pH 14','At pH 0'] },
+  { questionText:'At pH greater than pI, what form\ndoes the amino acid exist in?', answer:'Deprotonated — NH₂ and COO⁻', dist:['Zwitterion — NH₃⁺ and COO⁻','Protonated — NH₃⁺ and COOH','Neutral molecule'] },
+  { questionText:'At pH less than pI, what form\ndoes the amino acid exist in?', answer:'Protonated — NH₃⁺ and COOH', dist:['Zwitterion — NH₃⁺ and COO⁻','Deprotonated — NH₂ and COO⁻','Neutral molecule'] },
+  { questionText:'What happens to the zwitterion\nin acidic conditions?', answer:'NH₃⁺ retained, COO⁻ protonated to COOH', dist:['NH₂ formed, COO⁻ retained','NH₃⁺ deprotonated, COOH retained','No change'] },
+  { questionText:'What happens to the zwitterion\nin basic conditions?', answer:'COO⁻ retained, NH₃⁺ deprotonated to NH₂', dist:['COOH formed, NH₂ retained','NH₃⁺ retained, COO⁻ protonated','No change'] }
+];
+
+const STAGE6 = [
+  { questionText:'Reagents and conditions for free radical\nsubstitution of methane with chlorine?', answer:'Cl₂, UV light', dist:['Cl₂, heat','Cl₂, AlCl₃','Cl₂, aqueous'] },
+  { questionText:'What are the THREE stages of\nfree radical substitution?\nSlash ALL correct answers:', multi:true, answers:['Initiation','Propagation','Termination'], dist:['Oxidation','Elimination','Combustion'] },
+  { questionText:'Products of complete combustion\nof propane?', answer:'CO₂ and H₂O', dist:['CO and H₂O','C and H₂O','CO₂ and H₂'] },
+  { questionText:'Which reagent is a good distinguishing\ntest for alkane vs alkene?', answer:'Br₂(aq)', dist:['Cold dilute KMnO₄',"Tollens' reagent","Fehling's solution"] },
+  { questionText:'Products when Br₂(aq) reacts\nwith an alkene?', answer:'−Br and −OH added across double bond', dist:['−Br and −Br','−OH and −OH','−H and −Br'] },
+  { questionText:'What is the major product when\nBr₂(aq) is added to an alkene?', answer:'Bromohydrin (−Br, −OH)', dist:['Dibromoalkane (−Br, −Br)','Diol (−OH, −OH)','Bromoalkane (−Br, −H)'] },
+  { questionText:'Difference between Br₂(aq) vs Br₂/CCl₄\nwith an alkene?', answer:'Br₂(aq) gives bromohydrin (−Br, −OH); Br₂/CCl₄ gives dibromoalkane (−Br, −Br)', dist:['Both give same product','Br₂/CCl₄ gives bromohydrin','Br₂(aq) gives dibromoalkane'] },
+  { questionText:'Reagents and conditions to hydrate\nan alkene to alcohol?', answer:'H₂O(g), H₃PO₄(l), heat', dist:['H₂O(l), H₂SO₄(aq)','H₂O(g), NaOH, heat','H₂O(g), AlCl₃, heat'] },
+  { questionText:'HBr added to propene CH₃CH=CH₂.\nWhat is the MAJOR product?', answer:'CH₃CHBrCH₃', dist:['CH₃CH₂CH₂Br','CH₃CH=CHBr','CH₂BrCH=CH₂'] },
+  { questionText:'Why is CH₃CHBrCH₃ the major product\nwhen HBr adds to propene?', answer:'Secondary carbocation intermediate is more stable than primary', dist:['Primary carbocation is more stable','Br⁻ attacks the less substituted carbon','H⁺ adds to more substituted carbon'] },
+  { questionText:'Reagents and conditions for reduction\nof an alkene to alkane?', answer:'H₂(g), Ni, heat', dist:['LiAlH₄, dry ether','H₂O(g), H₃PO₄','KMnO₄, H₂SO₄, heat'] },
+  { questionText:'Reagents for mild oxidation of\nan alkene to a diol?', answer:'KMnO₄, NaOH(aq), cold', dist:['Hot conc. KMnO₄, H₂SO₄, heat','Br₂(aq)','Acidified K₂Cr₂O₇'] },
+  { questionText:'Product when CH₃CH=C(CH₃)₂ is oxidised\nwith KMnO₄, H₂SO₄(aq), heat?\nSlash ALL correct answers:', multi:true, answers:['CH₃COOH','CH₃COCH₃'], dist:['CO₂ and H₂O','CH₃CHO','HCOOH'] },
+  { questionText:'Product when CH₂=CH₂ is oxidised\nwith hot conc. KMnO₄, H₂SO₄, heat?', answer:'CO₂ and H₂O', dist:['CH₃COOH','HCOOH','CH₂(OH)₂'] },
+  { questionText:'Two alkenes both decolourise hot conc. KMnO₄.\nOnly one produces effervescence.\nWhich type produces effervescence?', answer:'Terminal alkene (CH₂= group)', dist:['Internal alkene','Disubstituted alkene','Cyclic alkene'] },
+  { questionText:'What is observed when an alkene\nreacts with Br₂(aq)?', answer:'Reddish brown to colourless', dist:['No change','Purple to colourless','Yellow precipitate'] },
+  { questionText:'What is observed when an alkane\nreacts with Br₂(aq)?', answer:'No change', dist:['Reddish brown to colourless','Purple to colourless','Effervescence'] },
+  { questionText:'Which observation confirms a terminal alkene\nwhen treated with hot conc. KMnO₄, H₂SO₄, heat?', answer:'Purple to colourless and effervescence', dist:['Purple to colourless only','Effervescence only','Remains purple'] }
+];
+
+const STAGE_ARENES = [
+  { questionText:'Reagents and conditions for electrophilic\nsubstitution of benzene with bromine?', answer:'Br₂(l), FeBr₃', dist:['Br₂(aq), FeBr₃','Br₂(l), UV light','Br₂(g), AlCl₃'] },
+  { questionText:'What is the electrophile generated\nwhen Br₂ reacts with FeBr₃?', answer:'Br⁺', dist:['Br₂⁺','FeBr₄⁻','Br•'] },
+  { questionText:'Reagents and conditions for electrophilic\nsubstitution of benzene with chlorine?', answer:'Cl₂(g), AlCl₃', dist:['Cl₂(aq), AlCl₃','Cl₂(g), UV light','Cl₂(g), FeCl₂'] },
+  { questionText:'Why does halogenation of benzene require\na catalyst but halogenation of alkenes does not?', answer:'Resonance stabilised', dist:['Benzene has no π electrons','Benzene is more reactive','Benzene has stronger C−H bonds'] },
+  { questionText:'Reagents and conditions for\nFriedel-Crafts acylation of benzene?', answer:'CH₃COCl, AlCl₃', dist:['CH₃COCl, FeBr₃','CH₃COOH, AlCl₃','CH₃COCl, UV light'] },
+  { questionText:'Reagents and conditions for\nFriedel-Crafts alkylation of benzene?', answer:'CH₃Cl, AlCl₃', dist:['CH₃Cl, FeBr₃','CH₄, AlCl₃','CH₃OH, AlCl₃'] },
+  { questionText:'Reagents and conditions for electrophilic\nsubstitution of benzene to form nitrobenzene?', answer:'Conc. HNO₃, conc. H₂SO₄, 55°C', dist:['Conc. HNO₃ only, heat','Dilute HNO₃, 55°C','Conc. HNO₃, conc. H₂SO₄, reflux'] },
+  { questionText:'What is the electrophile in electrophilic\nsubstitution of benzene with HNO₃/H₂SO₄?', answer:'NO₂⁺', dist:['NO₃⁻','H₂SO₄⁺','NO•'] },
+  { questionText:'Nitrobenzene reacts with Br₂, FeBr₃.\nWhich product is formed?', answer:'3-bromonitrobenzene', dist:['2-bromonitrobenzene','4-bromonitrobenzene','No reaction'] },
+  { questionText:'Benzene with an activating substituent undergoes\nelectrophilic substitution at ________', answer:'2,4,6-positions', dist:['3,5-positions','1-position only','Random positions'] },
+  { questionText:'Product when methylbenzene is oxidised\nwith KMnO₄, H₂SO₄(aq), heat?', answer:'Benzoic acid', dist:['Benzaldehyde','CO₂ and H₂O','No reaction'] },
+  { questionText:'C₆H₅C(CH₃)₃ treated with\nKMnO₄, H₂SO₄(aq), heat.\nWhat is observed?', answer:'Remains purple', dist:['Purple to colourless','Orange to green','Effervescence'] },
+  { questionText:'Ethylbenzene treated with\nKMnO₄, H₂SO₄(aq), heat.\nWhat is observed?', answer:'Purple to colourless, effervescence observed', dist:['Purple to colourless only','Orange to green','Remains purple'] },
+  { questionText:'Which reagent gives tri-bromination\nof phenol at 2,4,6 positions?', answer:'Br₂(aq)', dist:['Br₂(l)','Br₂/CCl₄','Br₂(g)'] },
+  { questionText:'Which reagent gives mono-bromination\nof phenol?', answer:'Br₂(l)', dist:['Br₂(aq)','Br₂(g)','Br₂/CCl₄'] },
+  { questionText:'Which reagent gives mono-nitration\nof phenol?', answer:'HNO₃(aq)', dist:['Conc. HNO₃, conc. H₂SO₄','HNO₃(l)','Br₂(aq)'] },
+  { questionText:'What is observed when phenol\nreacts with Br₂(aq)?', answer:'Reddish brown solution decolourises', dist:['White precipitate forms','No change','Yellow precipitate'] },
+  { questionText:'Which reagent gives tri-bromination\nof phenylamine?', answer:'Br₂(aq)', dist:['Br₂(l)','Br₂/CCl₄','Conc. HNO₃'] },
+  { questionText:'Which reagent gives mono-bromination\nof phenylamine?', answer:'Br₂(l)', dist:['Br₂(aq)','Br₂/CCl₄','FeBr₃'] },
+  { questionText:'What is formed when phenylamine\nreacts with acyl chloride?', answer:'Amide', dist:['Ester','Salt','Alcohol'] }
+];
+
+const STAGE_GF = [
+  { questionText:'Which halogenoalkane hydrolyses fastest\nwith NaOH(aq), dilute HNO₃, AgNO₃(aq), heat?', answer:'C₂H₅I', dist:['C₂H₅Cl','C₂H₅Br','C₂H₅F'] },
+  { questionText:'Which compounds give a positive iodoform test?\nSlash ALL correct answers:', multi:true, answers:['CH₃CHO','CH₃COCH₃','CH₃CH₂OH'], dist:['HCHO','CH₃CH₂CHO','CH₃COOH'] },
+  { questionText:'Which reagents convert CH₃CH₂OH\nto chloroethane?\nSlash ALL correct answers:', multi:true, answers:['PCl₃, dry, r.t.p','PCl₅, dry','SOCl₂, dry'], dist:['HCl(aq)','NaOH(aq)','KOH(alc)'] },
+  { questionText:'Which compound hydrolyses fastest\nwith cold water?', answer:'Acyl chloride', dist:['Ester','Amide','Chlorobenzene'] },
+  { questionText:'At pH greater than pI, what form\ndoes the amino acid exist in?', answer:'Deprotonated — NH₂ and COO⁻', dist:['Zwitterion — NH₃⁺ and COO⁻','Protonated — NH₃⁺ and COOH','Neutral molecule'] },
+  { questionText:'Products when CH₃CH=C(CH₃)₂ is oxidised\nwith KMnO₄, H₂SO₄(aq), heat?\nSlash ALL correct answers:', multi:true, answers:['CH₃COOH','CH₃COCH₃'], dist:['CO₂ and H₂O','CH₃CHO','HCOOH'] },
+  { questionText:'Nitrobenzene reacts with Br₂, FeBr₃.\nWhich product is formed?', answer:'3-bromonitrobenzene', dist:['2-bromonitrobenzene','4-bromonitrobenzene','No reaction'] },
+  { questionText:'Which reagent gives tri-bromination\nof phenylamine?', answer:'Br₂(aq)', dist:['Br₂(l)','Br₂/CCl₄','Conc. HNO₃'] },
+  { questionText:'Which compound gives orange to green\nwith K₂Cr₂O₇ AND positive iodoform test?', answer:'CH₃CH(OH)CH₃', dist:['CH₃CH₂OH','CH₃COCH₃','CH₃CH₂CH₂OH'] },
+  { questionText:'Which compound gives positive 2,4-DNPH\nAND positive iodoform\nbut NEGATIVE Tollens\'?', answer:'CH₃COCH₃', dist:['CH₃CHO','HCHO','C₆H₅COCH₃'] },
+  { questionText:'Which compound gives positive Tollens\'\nAND positive 2,4-DNPH\nbut NEGATIVE iodoform?', answer:'HCHO', dist:['CH₃CHO','CH₃COCH₃','CH₃CH₂CHO'] },
+  { questionText:'Convert CH₂=CH₂ → CH₃CH₂OH\nin one step. Which reagent?', answer:'H₂O(g), H₃PO₄(l), heat', dist:['NaOH(aq), heat','HBr, then NaOH(aq)','Br₂(aq)'] },
+  { questionText:'Convert CH₃CH₂Br → CH₃CH₂CN → CH₃CH₂COOH.\nWhat is step 2?', answer:'Dilute H₂SO₄, heat', dist:['LiAlH₄, dry ether','KOH(alc), heat','NaOH(aq)'] },
+  { questionText:'Convert CH₂=CH₂ → CH₃CH₂Br\nin one step. Which reagent?', answer:'HBr', dist:['Br₂(aq)','Br₂/CCl₄','NaBr, H₂SO₄'] },
+  { questionText:'Convert benzaldehyde → benzoic acid.\nWhich reagent?', answer:'KMnO₄, H₂SO₄(aq), heat', dist:['LiAlH₄, dry ether',"Tollens' reagent","Fehling's solution"] },
+  { questionText:'Convert phenol → ester.\nWhich reagent?', answer:'Acyl chloride', dist:['Carboxylic acid','Alcohol','Ester'] },
+  { questionText:'Which compound reacts with Na metal\nAND Br₂(aq) to give observable reactions?', answer:'Phenol', dist:['Benzene','Cyclohexane','Chlorobenzene'] },
+  { questionText:'What is formed when CH₃NH₂\nreacts with CH₃COCl?', answer:'Amide', dist:['Ammonium salt','Ester','Alcohol'] },
+  { questionText:'What is formed when CH₃NH₂\nreacts with CH₃COOH?', answer:'Ammonium salt', dist:['Amide','Ester','Alcohol'] },
+  { questionText:'Which reagent converts a nitrile\nto a primary amine?', answer:'LiAlH₄, dry ether', dist:['H₃O⁺, heat','KOH(alc)','NaOH(aq)'] },
+  { questionText:'Convert CH₃CH=CH₂ → CH₃CH(NH₂)CH₃\nin two steps. What is step 1?', answer:'HBr — Markovnikov addition to give CH₃CHBrCH₃', dist:['KCN, ethanol','NaOH(aq)','Br₂(aq)'] },
+  { questionText:'Convert CH₃CHBrCH₃ → CH₃CH(NH₂)CH₃.\nWhich reagent?', answer:'Excess NH₃, ethanol, heat', dist:['NaOH(aq), heat','KCN, ethanol','KOH(alc)'] },
+  { questionText:'CH₃CH₂OH → CH₂=CH₂ → CH₃CH₂Br.\nReagents for BOTH steps?\nSlash ALL correct answers:', multi:true, answers:['Excess conc. H₂SO₄, heat','HBr'], dist:['KOH(alc), heat','Br₂(aq)','NaOH(aq)','Br₂/CCl₄'] },
+  { questionText:'Which reagent converts a secondary alcohol\nto a ketone?', answer:'Acidified K₂Cr₂O₇, heat', dist:['LiAlH₄, dry ether','Conc. H₂SO₄, heat',"Tollens' reagent"] },
+  { questionText:'Convert CH₃CH₂Br → CH₃CH₂NH₂\nin one step. Which reagent?', answer:'Excess NH₃, ethanol, heat', dist:['NaOH(aq), heat','KCN, ethanol','LiAlH₄, dry ether'] },
+  { questionText:'CH₃CH₂Br → CH₃CH₂CN → CH₃CH₂CH₂NH₂.\nReagents for BOTH steps?\nSlash ALL correct answers:', multi:true, answers:['KCN, ethanol, heat','LiAlH₄, dry ether'], dist:['NaOH(aq), heat','H₃O⁺, heat','KOH(alc)','Excess NH₃, ethanol, heat'] },
+  { questionText:'Compound A: orange to green with K₂Cr₂O₇,\npositive iodoform, reacts with acyl chloride.\nWhat is A?', answer:'CH₃CH(OH)CH₃', dist:['CH₃CH₂OH','CH₃COCH₃','CH₃CH₂CH₂OH'] },
+  { questionText:'Which aldehyde gives positive Tollens\'\nbut NEGATIVE Fehling\'s?', answer:'C₆H₅CHO', dist:['CH₃CHO','HCHO','CH₃CH₂CHO'] },
+  { questionText:'Which reagent reduces an amide\nto an amine?', answer:'LiAlH₄, dry ether', dist:['H₂(g), Ni, heat','NaBH₄, ethanol','H₃O⁺, heat'] }
+];
+
+// Stage order: 1=Alkanes&Alkenes, 2=Arenes, 3=Halogenoalkanes, 4=Alcohols,
+//              5=Carbonyls, 6=Carboxylic Acids, 7=Nitrogen Compounds, 8=Grand Finale
+const STAGE_DATA = {
+  1: STAGE6,        // Alkanes & Alkenes
+  2: STAGE_ARENES,  // Arenes
+  3: STAGE1,        // Halogenoalkanes
+  4: STAGE3,        // Alcohols
+  5: STAGE2,        // Carbonyls
+  6: STAGE4,        // Carboxylic Acids
+  7: STAGE5,        // Nitrogen Compounds
+  8: STAGE_GF       // Grand Finale
+};
+
+// ═══════════════════════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════════════════════
+let soundOn = true;
+let _ac = null;
+const AC = () => {
+  if (!_ac) _ac = new (window.AudioContext||window.webkitAudioContext)();
+  if (_ac.state==='suspended') _ac.resume();
+  return _ac;
+};
+const sfx = {
+  chime(){
+    if(!soundOn)return; try{
+      const ac=AC();
+      [523.25,659.25,783.99,1046.5].forEach((f,i)=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;
+        const t=ac.currentTime+i*.08;
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.17,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.34);
+        o.start(t);o.stop(t+.34);
+      });
+    }catch(e){}
+  },
+  buzz(){
+    if(!soundOn)return; try{
+      const ac=AC(),o=ac.createOscillator(),g=ac.createGain();
+      o.connect(g);g.connect(ac.destination);o.type='sawtooth';
+      o.frequency.setValueAtTime(180,ac.currentTime);o.frequency.exponentialRampToValueAtTime(80,ac.currentTime+.28);
+      g.gain.setValueAtTime(.24,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.28);
+      o.start();o.stop(ac.currentTime+.28);
+    }catch(e){}
+  },
+  warn(){
+    if(!soundOn)return; try{
+      const ac=AC();
+      [0,.2].forEach(d=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.value=880;
+        const t=ac.currentTime+d;
+        g.gain.setValueAtTime(.09,t);g.gain.exponentialRampToValueAtTime(.001,t+.14);
+        o.start(t);o.stop(t+.14);
+      });
+    }catch(e){}
+  },
+  over(){
+    if(!soundOn)return; try{
+      const ac=AC();
+      [440,349.23,293.66,220].forEach((f,i)=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.value=f;
+        const t=ac.currentTime+i*.18;
+        g.gain.setValueAtTime(.19,t);g.gain.exponentialRampToValueAtTime(.001,t+.38);
+        o.start(t);o.stop(t+.38);
+      });
+    }catch(e){}
+  },
+  victory(){
+    if(!soundOn)return; try{
+      const ac=AC();
+      // Ascending celebratory 8-bit fanfare
+      const notes=[523.25,659.25,783.99,1046.5,1318.5,1567.98];
+      notes.forEach((f,i)=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.value=f;
+        const t=ac.currentTime+i*.1;
+        g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.13,t+.02);
+        g.gain.exponentialRampToValueAtTime(.001,t+.22);
+        o.start(t);o.stop(t+.22);
+      });
+      // Final chord burst
+      [523.25,659.25,783.99].forEach(f=>{
+        const o=ac.createOscillator(),g=ac.createGain();
+        o.connect(g);g.connect(ac.destination);o.type='square';o.frequency.value=f;
+        const t=ac.currentTime+.7;
+        g.gain.setValueAtTime(.1,t);g.gain.exponentialRampToValueAtTime(.001,t+.4);
+        o.start(t);o.stop(t+.4);
+      });
+    }catch(e){}
+  }
+};
+function toggleSound(){
+  soundOn=!soundOn;
+  document.querySelectorAll('.snd-btn').forEach(b=>{b.textContent=soundOn?'🔊':'🔇';b.classList.toggle('muted',!soundOn);});
+}
+
+// ═══════════════════════════════════════════════════════
+// HEXAGON BACKGROUND — drifting benzene-ring hexagons
+// ═══════════════════════════════════════════════════════
+const hc = document.getElementById('hex-canvas');
+const hx = hc.getContext('2d');
+
+function resizeHc() { hc.width = innerWidth; hc.height = innerHeight; }
+
+// Each hexagon: position, size, velocity, rotation, rotspeed, opacity
+// Benzene ring = regular hexagon outline + inner circle (delocalised ring)
+const HEXAGONS = [];
+const HEX_COUNT = 22;
+
+function initHexagons() {
+  HEXAGONS.length = 0;
+  for (let i = 0; i < HEX_COUNT; i++) {
+    const r = 18 + Math.random() * 32; // radius 18–50px
+    HEXAGONS.push({
+      x:   Math.random() * hc.width,
+      y:   Math.random() * hc.height,
+      r,
+      vx:  (Math.random() - 0.5) * 0.22,
+      vy:  (Math.random() - 0.5) * 0.22,
+      rot: Math.random() * Math.PI * 2,
+      vr:  (Math.random() - 0.5) * 0.003,   // very slow rotation
+      // stagger opacity to avoid uniform grid look
+      alpha: 0.04 + Math.random() * 0.045   // max ~0.085, typically 0.06
+    });
+  }
+}
+
+function drawHexagon(ctx, x, y, r, rot, alpha) {
+  const gold = `rgba(201,146,42,${alpha})`;
+
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rot);
+
+  // Outer hexagon ring
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 - Math.PI / 6; // flat-top
+    const px = Math.cos(a) * r;
+    const py = Math.sin(a) * r;
+    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.strokeStyle = gold;
+  ctx.lineWidth   = 1.2;
+  ctx.stroke();
+
+  // Alternating double-bond lines (benzene Kekulé-style):
+  // Draw every other bond as a slightly inset parallel line
+  const inset = r * 0.78;
+  for (let i = 0; i < 6; i += 2) {
+    const a1 = (i / 6)       * Math.PI * 2 - Math.PI / 6;
+    const a2 = ((i+1) / 6)   * Math.PI * 2 - Math.PI / 6;
+    // midpoint angle, inset toward centre
+    const mx1 = Math.cos(a1) * inset;
+    const my1 = Math.sin(a1) * inset;
+    const mx2 = Math.cos(a2) * inset;
+    const my2 = Math.sin(a2) * inset;
+    ctx.beginPath();
+    ctx.moveTo(mx1, my1);
+    ctx.lineTo(mx2, my2);
+    ctx.strokeStyle = gold;
+    ctx.lineWidth   = 0.9;
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+resizeHc(); initHexagons();
+window.addEventListener('resize', () => { resizeHc(); initHexagons(); });
+
+(function animHex() {
+  hx.clearRect(0, 0, hc.width, hc.height);
+  // fill black background
+  hx.fillStyle = '#0A0A0A';
+  hx.fillRect(0, 0, hc.width, hc.height);
+
+  HEXAGONS.forEach(h => {
+    h.x   += h.vx;
+    h.y   += h.vy;
+    h.rot += h.vr;
+
+    // Wrap at edges with padding
+    const pad = h.r + 10;
+    if (h.x < -pad)            h.x = hc.width  + pad;
+    if (h.x > hc.width  + pad) h.x = -pad;
+    if (h.y < -pad)            h.y = hc.height + pad;
+    if (h.y > hc.height + pad) h.y = -pad;
+
+    drawHexagon(hx, h.x, h.y, h.r, h.rot, h.alpha);
+  });
+
+  requestAnimationFrame(animHex);
+})();
+
+// ═══════════════════════════════════════════════════════
+// SLASH TRAIL
+// ═══════════════════════════════════════════════════════
+const tc=document.getElementById('trail-canvas'),tx=tc.getContext('2d');
+let trail=[];
+function resizeTc(){tc.width=innerWidth;tc.height=innerHeight;}
+resizeTc();
+window.addEventListener('resize',resizeTc);
+function addPt(x,y){trail.push({x,y,t:Date.now()});if(trail.length>26)trail.shift();}
+(function drawTrail(){
+  tx.clearRect(0,0,tc.width,tc.height);
+  const now=Date.now();
+  trail=trail.filter(p=>now-p.t<320);
+  for(let i=1;i<trail.length;i++){
+    const a=trail[i-1],b=trail[i];
+    const age=(now-b.t)/320,alpha=Math.max(0,1-age);
+    tx.beginPath();tx.moveTo(a.x,a.y);tx.lineTo(b.x,b.y);
+    tx.strokeStyle=`rgba(201,146,42,${alpha*.9})`;
+    tx.lineWidth=(1-age)*11+1;tx.lineCap='round';
+    tx.shadowColor=`rgba(232,184,75,${alpha*.65})`;tx.shadowBlur=14;
+    tx.stroke();tx.shadowBlur=0;
+  }
+  requestAnimationFrame(drawTrail);
+})();
+let md=false;
+document.addEventListener('mousemove',e=>{if(md)addPt(e.clientX,e.clientY);});
+document.addEventListener('mousedown',()=>md=true);
+document.addEventListener('mouseup',()=>{md=false;trail=[];});
+document.addEventListener('touchmove',e=>{const t=e.touches[0];addPt(t.clientX,t.clientY);},{passive:true});
+document.addEventListener('touchend',()=>{trail=[];});
+
+// ═══════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ═══════════════════════════════════════════════════════
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if(id==='s-stage') renderStageSelect();
+}
+
+
+// ═══════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════
+const isMob=()=>window.innerWidth<=480;
+const MAX_TIME=45; // default timer for stages 1-7
+const GF_TIME=60;  // Grand Finale timer
+function stageMaxTime(n){ return n===8?GF_TIME:MAX_TIME; }
+
+let G={
+  lives:3,score:0,timeLeft:MAX_TIME,
+  timer:null,queue:[],current:null,
+  reagents:[],errors:[],startTime:0,
+  active:false,phase:0,answered:false,animId:null,
+  stageNum:1,
+  // multi-answer state
+  multiRemaining:[],multiHit:0,multiTotal:0
+};
+let playerName='';
+const rData=new Map();
+
+// ═══════════════════════════════════════════════════════
+// LAUNCH
+// ═══════════════════════════════════════════════════════
+function launchStage(stageNum){
+  stageNum = stageNum || G.stageNum || 1;
+  playerName=document.getElementById('player-name').value.trim()||'Player';
+  AC();
+  const mt=stageMaxTime(stageNum);
+  // Clear any running timer before resetting state
+  clearInterval(G.timer);
+  G.timer=null;
+  G.lives=3;G.score=0;G.timeLeft=mt;G.maxTime=mt;G.errors=[];G.active=true;G.answered=false;G.phase=0;
+  G.stageNum=stageNum;
+  G.multiRemaining=[];G.multiHit=0;G.multiTotal=0;
+  // Randomly sample questions from the selected stage
+  const bank=STAGE_DATA[stageNum]||STAGE1;
+  const sampleSize=stageNum===8?28:12;
+  G.queue=shuffle([...bank]).slice(0,sampleSize);
+  document.getElementById('hud-timer').textContent=mt;
+  document.getElementById('hud-timer').classList.remove('warn');
+  document.getElementById('hud-timer').style.color='';
+  document.getElementById('hud-score').textContent='0';
+  document.getElementById('tbar').style.width='100%';
+  updateLives();clearArea();show('s-game');
+  setTimeout(()=>{nextQ();startTimer();},240);
+}
+
+// ═══════════════════════════════════════════════════════
+// TIMER
+// ═══════════════════════════════════════════════════════
+function startTimer(){
+  clearInterval(G.timer);
+  G.timer=null;
+  const mt=G.maxTime||MAX_TIME;
+  G.timer=setInterval(()=>{
+    if(!G.active)return;
+    G.timeLeft=Math.max(0,G.timeLeft-1);
+    const el=document.getElementById('hud-timer');
+    el.textContent=G.timeLeft;
+    document.getElementById('tbar').style.width=(G.timeLeft/mt*100)+'%';
+    const r=G.timeLeft/mt;
+    if(r>.33){el.style.color=`hsl(${38*r+4},80%,${48+r*12}%)`;el.classList.remove('warn');}
+    else{el.style.color='';el.classList.add('warn');}
+    const warnAt=mt===GF_TIME?20:15;
+    if(G.timeLeft===warnAt)sfx.warn();
+    if(G.timeLeft>mt*0.67)G.phase=0;
+    else if(G.timeLeft>mt*0.33)G.phase=1;
+    else G.phase=2;
+    if(G.timeLeft<=0)endGame('timeout');
+  },1000);
+}
+
+// ═══════════════════════════════════════════════════════
+// QUESTION BANNER
+// ═══════════════════════════════════════════════════════
+function renderBanner(q){
+  const content = document.getElementById('q-content');
+  content.innerHTML = `<div class="q-text-plain">${q.questionText}</div>`;
+  // Multi-answer counter
+  let mc = document.getElementById('multi-counter');
+  if(q.multi){
+    if(!mc){
+      mc=document.createElement('div');mc.id='multi-counter';mc.className='multi-counter';
+      document.getElementById('q-banner').appendChild(mc);
+    }
+    mc.textContent=`0 / ${q.answers.length} correct`;
+    mc.style.display='block';
+  } else {
+    if(mc) mc.style.display='none';
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// NEXT QUESTION
+// ═══════════════════════════════════════════════════════
+function nextQ(){
+  clearArea();
+  if(!G.queue.length){endGame('complete');return;}
+  G.current=G.queue.shift();
+  G.answered=false;
+  G.startTime=Date.now();
+  renderBanner(G.current);
+
+  const q=G.current;
+  const mob=isMob();
+
+  if(q.multi){
+    // Multi-answer: show ALL correct answers + distractors simultaneously
+    G.multiRemaining=[...q.answers];
+    G.multiHit=0;
+    G.multiTotal=q.answers.length;
+    const maxR=mob?Math.min(q.answers.length+3,5):Math.min(q.answers.length+4,7);
+    const distPool=shuffle([...q.dist]).slice(0,maxR-q.answers.length);
+    const pool=shuffle([...q.answers,...distPool]).map(txt=>({key:txt,isCorrectAnswer:q.answers.includes(txt)}));
+    spawnReagents(pool,q);
+  } else {
+    const maxR=mob?4:6;
+    const distPool=shuffle([...q.dist]).slice(0,maxR-1);
+    const pool=shuffle([q.answer,...distPool]).map(txt=>({key:txt,isCorrectAnswer:txt===q.answer}));
+    spawnReagents(pool,q);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// FLASK BACKGROUND — pure CSS clip-path, no SVG
+// Returns inline style string for the flask shell div
+// ═══════════════════════════════════════════════════════
+function flaskStyle(){
+  // We use CSS clip-path polygon to give conical flask silhouette
+  // Combined with background gradient for the body + liquid feel
+  return `
+    background: linear-gradient(160deg, rgba(201,146,42,0.18) 0%, rgba(201,146,42,0.06) 100%);
+    border: 1.4px solid rgba(201,146,42,0.48);
+    border-radius: 0 0 12px 12px;
+    clip-path: polygon(
+      36% 0%, 64% 0%,
+      64% 22%, 92% 40%,
+      92% 92%, 88% 100%,
+      12% 100%, 8% 92%,
+      8% 40%, 36% 22%
+    );
+    box-shadow: inset 0 -6px 16px rgba(201,146,42,0.18), 0 0 8px rgba(201,146,42,0.08);
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// SPAWN REAGENTS — text only, CSS flask shape
+// ═══════════════════════════════════════════════════════
+function spawnReagents(pool, q){
+  const area=document.getElementById('game-area');
+  const aW=area.offsetWidth, aH=area.offsetHeight;
+  const mob=isMob();
+
+  // All flasks same size — sized for text readability
+  const fw=mob?Math.min(aW*.42,152):Math.min(aW*.2,148);
+  const fh=Math.round(fw*1.3);
+
+  const margin=13;
+  const topSafe=Math.round(aH*.29);
+  const botSafe=aH-margin;
+  const gapX=fw*.72, gapY=fh*.65;
+
+  // Non-overlapping position assignment
+  const positions=[];
+  for(let i=0;i<pool.length;i++){
+    let placed=false;
+    for(let a=0;a<100;a++){
+      const x=margin+Math.random()*Math.max(0,aW-fw-margin*2);
+      const y=topSafe+Math.random()*Math.max(0,botSafe-fh-topSafe);
+      const ok=positions.every(p=>Math.abs(p.x-x)>gapX||Math.abs(p.y-y)>gapY);
+      if(ok){positions.push({x,y});placed=true;break;}
+    }
+    if(!placed){
+      const cols=Math.ceil(Math.sqrt(pool.length));
+      positions.push({x:margin+(i%cols)*(fw+10),y:topSafe+Math.floor(i/cols)*(fh+10)});
+    }
+  }
+
+  G.reagents=[];
+
+  pool.forEach(({key},i)=>{
+    setTimeout(()=>{
+      if(!G.active)return;
+      const el=document.createElement('div');
+      el.className='reagent';
+      el.dataset.value=key;
+      el.style.width=fw+'px';
+      el.style.height=fh+'px';
+      const {x,y}=positions[i];
+      el.style.left=x+'px';
+      el.style.top=y+'px';
+
+      // CSS flask shell
+      const shell=document.createElement('div');
+      shell.className='flask-shell';
+      shell.style.cssText=flaskStyle();
+
+      // Text label only — dynamic font size by text length
+      const inner=document.createElement('div');
+      inner.className='flask-content';
+      const lbl=document.createElement('div');
+      lbl.className='flask-text';
+      const len=key.length;
+      const fs=mob
+        ?(len<=8?'clamp(12px,3.8vw,15px)':len<=14?'clamp(10px,3.2vw,13px)':'clamp(9px,2.8vw,11px)')
+        :(len<=8?'clamp(11px,2.2vw,14px)':len<=14?'clamp(10px,1.9vw,12px)':'clamp(9px,1.7vw,11px)');
+      lbl.style.fontSize=fs;
+      lbl.style.maxWidth=Math.round(fw*.84)+'px';
+      lbl.textContent=key;
+      inner.appendChild(lbl);
+      shell.appendChild(inner);
+      el.appendChild(shell);
+
+      attachSlash(el);
+      area.appendChild(el);
+
+      const baseSpd=(mob?.24:.32)+Math.random()*.18;
+      rData.set(el,{
+        y,baseX:x,
+        wobble:Math.random()*Math.PI*2,
+        wobbleSpd:.016+Math.random()*.014,
+        wobbleAmp:mob?8+Math.random()*8:12+Math.random()*14,
+        spd:baseSpd,fw,fh
+      });
+      G.reagents.push(el);
+      if(i===pool.length-1)animLoop();
+    },i*70);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// ANIMATION LOOP
+// ═══════════════════════════════════════════════════════
+function animLoop(){
+  cancelAnimationFrame(G.animId);
+  const area=document.getElementById('game-area');
+  const step=()=>{
+    if(!G.active)return;
+    const aH=area.offsetHeight,aW=area.offsetWidth;
+    G.reagents.forEach(el=>{
+      if(!el.isConnected)return;
+      if(el.classList.contains('slash-ok')||el.classList.contains('slash-bad'))return;
+      const d=rData.get(el);if(!d)return;
+      // Speed phases: 0=slow(>20s), 1=medium(10–20s), 2=fast(<10s)
+      const spd=G.phase===0?d.spd*.52:G.phase===1?d.spd*1.25:d.spd*2.7;
+      d.y-=spd;
+      d.wobble+=d.wobbleSpd;
+      if(d.y<-(d.fh+20)){
+        d.y=aH+10+Math.random()*25;
+        d.baseX=13+Math.random()*Math.max(0,aW-d.fw-26);
+        d.wobbleAmp=isMob()?8+Math.random()*8:12+Math.random()*14;
+      }
+      el.style.top=d.y+'px';
+      el.style.left=(d.baseX+Math.sin(d.wobble)*d.wobbleAmp)+'px';
+    });
+    G.animId=requestAnimationFrame(step);
+  };
+  G.animId=requestAnimationFrame(step);
+}
+
+// ═══════════════════════════════════════════════════════
+// SLASH — touchstart (immediate) + click (desktop)
+// ═══════════════════════════════════════════════════════
+function attachSlash(el){
+  el.addEventListener('touchstart',e=>{
+    e.preventDefault();e.stopPropagation();
+    const t=e.touches[0];addPt(t.clientX,t.clientY);
+    doSlash(el);
+  },{passive:false});
+  el.addEventListener('click',e=>{e.stopPropagation();doSlash(el);});
+}
+
+// ═══════════════════════════════════════════════════════
+// SLASH LOGIC — handles single and multi-answer
+// ═══════════════════════════════════════════════════════
+function doSlash(el){
+  if(!G.active)return;
+  if(el.classList.contains('slash-ok')||el.classList.contains('slash-bad')||el.classList.contains('slash-multi'))return;
+
+  const val=el.dataset.value;
+  const q=G.current;
+
+  if(q.multi){
+    doSlashMulti(el,val,q);
+  } else {
+    if(G.answered)return;
+    doSlashSingle(el,val,q);
+  }
+}
+
+function doSlashSingle(el,val,q){
+  const correct=val===q.answer;
+  const elapsed=(Date.now()-G.startTime)/1000;
+  const bonus=Math.max(0,Math.round((1-elapsed/10)*20));
+
+  if(correct){
+    G.answered=true;
+    el.classList.add('slash-ok');
+    sfx.chime();
+    const pts=10+bonus;
+    G.score+=pts;
+    document.getElementById('hud-score').textContent=G.score;
+    spawnFrags(el,'#2ECC71');
+    showPop(el,'+'+pts,'#2ECC71');
+    showCombo(bonus>10?'⚡ FAST!':'✓','#2ECC71');
+    cancelAnimationFrame(G.animId);
+    setTimeout(()=>nextQ(),580);
+  } else {
+    el.classList.add('slash-bad');
+    sfx.buzz();
+    G.lives=Math.max(0,G.lives-1);
+    updateLives();
+    spawnFrags(el,'#E74C3C');
+    showPop(el,'✗','#E74C3C');
+    shakeQ();
+    if(!G.errors.find(e=>e.q===q.questionText)){
+      G.errors.push({q:q.questionText, a:q.answer});
+    }
+    setTimeout(()=>{if(el.isConnected){el.remove();rData.delete(el);}},530);
+    if(G.lives<=0)setTimeout(()=>endGame('defeat'),430);
+  }
+}
+
+function doSlashMulti(el,val,q){
+  const idx=G.multiRemaining.indexOf(val);
+  const elapsed=(Date.now()-G.startTime)/1000;
+
+  if(idx!==-1){
+    // Correct — one of the required answers
+    G.multiRemaining.splice(idx,1);
+    G.multiHit++;
+    el.classList.add('slash-multi');
+    sfx.chime();
+    spawnFrags(el,'#2ECC71');
+    showPop(el,'✓','#2ECC71');
+
+    // Update counter
+    const mc=document.getElementById('multi-counter');
+    if(mc) mc.textContent=`${G.multiHit} / ${G.multiTotal} correct`;
+
+    if(G.multiRemaining.length===0){
+      // All correct answers found
+      const bonus=Math.max(0,Math.round((1-elapsed/10)*20));
+      const pts=10+bonus;
+      G.score+=pts;
+      document.getElementById('hud-score').textContent=G.score;
+      showCombo(bonus>10?'⚡ ALL FOUND!':'✓ COMPLETE','#2ECC71');
+      showPop(el,'+'+pts,'#2ECC71');
+      cancelAnimationFrame(G.animId);
+      setTimeout(()=>nextQ(),700);
+    }
+  } else {
+    // Wrong — distractor
+    el.classList.add('slash-bad');
+    sfx.buzz();
+    G.lives=Math.max(0,G.lives-1);
+    updateLives();
+    spawnFrags(el,'#E74C3C');
+    showPop(el,'✗','#E74C3C');
+    shakeQ();
+    if(!G.errors.find(e=>e.q===q.questionText)){
+      G.errors.push({q:q.questionText, a:q.answers.join(' AND ')});
+    }
+    setTimeout(()=>{if(el.isConnected){el.remove();rData.delete(el);}},530);
+    if(G.lives<=0)setTimeout(()=>endGame('defeat'),430);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// EFFECTS
+// ═══════════════════════════════════════════════════════
+function spawnFrags(el, color) {
+  const rect = el.getBoundingClientRect();
+  const cx = rect.left + rect.width  / 2;
+  const cy = rect.top  + rect.height / 2;
+  const isOk = color === '#2ECC71';
+
+  // ── Glow ring ──
+  const ring = document.createElement('div');
+  ring.className = 'ring';
+  const rSize = Math.max(rect.width, rect.height) * 0.9;
+  ring.style.cssText = `
+    left:${cx - rSize/2}px; top:${cy - rSize/2}px;
+    width:${rSize}px; height:${rSize}px;
+    border-color:${color};
+    box-shadow:0 0 12px ${color};
+    opacity:0.85;
+  `;
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 520);
+
+  // ── Chunky fragments (flask body pieces) ──
+  const fragCount = 14;
+  for (let i = 0; i < fragCount; i++) {
+    const angle = (i / fragCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.6;
+    const dist  = 55 + Math.random() * 90;       // fly far outward
+    const w     = 7  + Math.random() * 11;
+    const h     = 7  + Math.random() * 11;
+    const f = document.createElement('div');
+    f.className = 'frag';
+    const shape = Math.random() > 0.4 ? `${Math.round(Math.random()*4)}px` : '50%';
+    f.style.cssText = `
+      left:${cx - w/2}px; top:${cy - h/2}px;
+      width:${w}px; height:${h}px;
+      background:${color};
+      border-radius:${shape};
+      box-shadow:0 0 ${5 + Math.random()*6}px ${color};
+      --fx:${Math.cos(angle)*dist}px;
+      --fy:${Math.sin(angle)*dist}px;
+      --fr:${(Math.random() - 0.5) * 640}deg;
+    `;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 800);
+  }
+
+  // ── Thin glass shards ──
+  const shardCount = 8;
+  for (let i = 0; i < shardCount; i++) {
+    const angle = (i / shardCount) * Math.PI * 2 + Math.random() * 0.8;
+    const dist  = 45 + Math.random() * 80;
+    const len   = 14 + Math.random() * 22;
+    const s = document.createElement('div');
+    s.className = 'shard';
+    s.style.cssText = `
+      left:${cx}px; top:${cy}px;
+      width:${2 + Math.random()*2}px; height:${len}px;
+      background:linear-gradient(to bottom, ${color}, transparent);
+      border-radius:1px;
+      box-shadow:0 0 4px ${color};
+      transform-origin:top center;
+      --fx:${Math.cos(angle)*dist}px;
+      --fy:${Math.sin(angle)*dist}px;
+      --fr:${angle * (180/Math.PI) + (Math.random()-0.5)*80}deg;
+    `;
+    document.body.appendChild(s);
+    setTimeout(() => s.remove(), 720);
+  }
+
+  // ── Bright sparks (tiny, fast, further) ──
+  for (let i = 0; i < 10; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 80 + Math.random() * 100;
+    const f = document.createElement('div');
+    f.className = 'frag';
+    f.style.cssText = `
+      left:${cx - 3}px; top:${cy - 3}px;
+      width:3px; height:3px;
+      background:#fff;
+      border-radius:50%;
+      box-shadow:0 0 8px 2px ${color};
+      --fx:${Math.cos(angle)*dist}px;
+      --fy:${Math.sin(angle)*dist}px;
+      --fr:0deg;
+      animation-duration:.55s;
+    `;
+    document.body.appendChild(f);
+    setTimeout(() => f.remove(), 600);
+  }
+}
+function showPop(el,text,color){
+  const rect=el.getBoundingClientRect();
+  const p=document.createElement('div');
+  p.className='spop';p.textContent=text;
+  p.style.cssText=`left:${rect.left+rect.width/2-28}px;top:${rect.top+rect.height*.28}px;color:${color};text-shadow:0 0 14px ${color}`;
+  document.body.appendChild(p);setTimeout(()=>p.remove(),780);
+}
+function showCombo(text,color){
+  const c=document.createElement('div');
+  c.className='combo-txt';c.textContent=text;c.style.color=color;
+  document.getElementById('game-area').appendChild(c);
+  setTimeout(()=>c.remove(),840);
+}
+function shakeQ(){
+  const q=document.getElementById('q-banner');
+  q.classList.remove('shake');void q.offsetWidth;q.classList.add('shake');
+  setTimeout(()=>q.classList.remove('shake'),300);
+}
+
+// ═══════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════
+function updateLives(){
+  [1,2,3].forEach(i=>document.getElementById('l'+i).classList.toggle('dead',i>G.lives));
+}
+function clearArea(){
+  cancelAnimationFrame(G.animId);rData.clear();
+  document.getElementById('game-area').querySelectorAll('.reagent,.combo-txt').forEach(e=>e.remove());
+  G.reagents=[];
+}
+
+// ═══════════════════════════════════════════════════════
+// END GAME
+// reason: 'complete' (all Qs answered, lives>0)
+//         'timeout'  (timer hit 0 — victory if lives>0, defeat if lives=0)
+//         'defeat'   (lives hit 0)
+// ═══════════════════════════════════════════════════════
+function endGame(reason){
+  G.active=false;clearInterval(G.timer);G.timer=null;cancelAnimationFrame(G.animId);clearArea();
+
+  // Determine outcome
+  const isVictory = (reason==='complete' && G.lives>0) || (reason==='timeout' && G.lives>0);
+
+  // Unlock next stage on victory
+  if(isVictory){ unlockStage(G.stageNum+1); renderStageSelect(); }
+
+  const stageName = STAGE_NAMES[G.stageNum] || 'Stage';
+
+  if(isVictory){
+    sfx.victory();
+    const hd = document.getElementById('res-hd');
+    if(hd) hd.textContent = G.stageNum===8?'🏆 GRAND FINALE COMPLETE!':'STAGE COMPLETE';
+    document.getElementById('res-score').textContent=G.score;
+    document.getElementById('res-name').textContent=playerName.toUpperCase();
+    fillErrors('err-list');
+    populateShareCard(G.score, G.stageNum, stageName, 'result');
+    show('s-result');
+  } else {
+    sfx.over();
+    document.getElementById('over-score').textContent=G.score;
+    document.getElementById('over-name').textContent=playerName.toUpperCase();
+    fillErrors('over-err-list');
+    populateShareCard(G.score, G.stageNum, stageName, 'over');
+    show('s-over');
+  }
+}
+function fillErrors(id){
+  const c=document.getElementById(id);c.innerHTML='';
+  if(!G.errors.length){c.innerHTML='<div class="no-err">🏆 Perfect round — no errors!</div>';return;}
+  G.errors.forEach(e=>{
+    const d=document.createElement('div');d.className='err-card';
+    d.innerHTML=`<div class="err-q">${e.q}</div><div class="err-a">${e.a}</div>`;
+    c.appendChild(d);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+// STAGE UNLOCK SYSTEM — localStorage persistence
+// ═══════════════════════════════════════════════════════
+const STAGE_NAMES = {
+  1: 'Alkanes &amp; Alkenes',
+  2: 'Arenes',
+  3: 'Halogenoalkanes',
+  4: 'Alcohols',
+  5: 'Carbonyls',
+  6: 'Carboxylic Acids',
+  7: 'Nitrogen Compounds',
+  8: 'GRAND FINALE'
+};
+const TOTAL_STAGES = 7; // regular stages; GF (8) unlocks when all 7 done
+const LS_KEY = 'vt_sq_unlocked';
+
+function getUnlocked() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    const parsed = raw ? JSON.parse(raw) : [1];
+    if (!parsed.includes(1)) parsed.unshift(1);
+    return parsed;
+  } catch(e) { return [1]; }
+}
+
+function unlockStage(n) {
+  // For regular stages cap at 8 (GF); GF unlocks when all 7 done
+  if (n > 8) return;
+  try {
+    const unlocked = getUnlocked();
+    if (!unlocked.includes(n)) {
+      unlocked.push(n);
+      localStorage.setItem(LS_KEY, JSON.stringify(unlocked));
+    }
+    // Auto-unlock GF if all 7 stages cleared
+    const allDone = [1,2,3,4,5,6,7].every(s => unlocked.includes(s));
+    if (allDone && !unlocked.includes(8)) {
+      unlocked.push(8);
+      localStorage.setItem(LS_KEY, JSON.stringify(unlocked));
+    }
+  } catch(e) {}
+}
+
+function renderStageSelect() {
+  const grid = document.getElementById('stages-grid');
+  if (!grid) return;
+  const unlocked = getUnlocked();
+  grid.innerHTML = '';
+
+  // Regular stages 1–7
+  for (let i = 1; i <= TOTAL_STAGES; i++) {
+    const isOpen = unlocked.includes(i);
+    const card = document.createElement('div');
+    card.className = 's-card ' + (isOpen ? 'open' : 'locked');
+    const num = String(i).padStart(2, '0');
+    if (isOpen) {
+      card.onclick = () => launchStage(i);
+      card.innerHTML = `<div class="s-num">STAGE ${num}</div><div class="s-name">${STAGE_NAMES[i]}</div>`;
+    } else {
+      card.innerHTML = `<div class="lock-ico">🔒</div><div class="s-num">STAGE ${num}</div><div class="s-name">${STAGE_NAMES[i]}</div>`;
+    }
+    grid.appendChild(card);
+  }
+
+  // Grand Finale card — full width, special styling
+  const gfUnlocked = unlocked.includes(8);
+  const gfCard = document.createElement('div');
+  gfCard.className = 'gf-card' + (gfUnlocked ? ' gf-open' : ' gf-locked');
+  if (gfUnlocked) {
+    gfCard.onclick = () => launchStage(8);
+    gfCard.innerHTML = `<div class="gf-label">⚡ GRAND FINALE ⚡</div><div class="gf-sub">All stages — 60 seconds — 28 questions</div>`;
+  } else {
+    gfCard.innerHTML = `<div class="gf-label">🔒 GRAND FINALE</div><div class="gf-sub">Complete all 7 stages to unlock</div>`;
+  }
+  grid.appendChild(gfCard);
+}
+
+// Render on page load
+renderStageSelect();
+
+// ═══════════════════════════════════════════════════════
+// DEVICE DETECTION
+// Phone: innerWidth < 768. Tablet/Desktop: 768+
+// ═══════════════════════════════════════════════════════
+const isPhone = () => window.innerWidth < 768;
+
+// ═══════════════════════════════════════════════════════
+// FULLSCREEN API — tablets and desktop only
+// ═══════════════════════════════════════════════════════
+function fsRequest(el) {
+  if (el.requestFullscreen)       return el.requestFullscreen();
+  if (el.webkitRequestFullscreen) return el.webkitRequestFullscreen();
+  if (el.mozRequestFullScreen)    return el.mozRequestFullScreen();
+  if (el.msRequestFullscreen)     return el.msRequestFullscreen();
+  return Promise.resolve();
+}
+
+function fsExit() {
+  if (document.exitFullscreen)       return document.exitFullscreen();
+  if (document.webkitExitFullscreen) return document.webkitExitFullscreen();
+  if (document.mozCancelFullScreen)  return document.mozCancelFullScreen();
+  if (document.msExitFullscreen)     return document.msExitFullscreen();
+}
+
+function fsElement() {
+  return document.fullscreenElement  ||
+         document.webkitFullscreenElement ||
+         document.mozFullScreenElement   ||
+         document.msFullscreenElement    || null;
+}
+
+function toggleFullscreen() {
+  if (isPhone()) return; // no fullscreen on phones
+  if (fsElement()) {
+    try { fsExit(); } catch(e) {}
+  } else {
+    try {
+      const p = fsRequest(document.documentElement);
+      if (p && typeof p.then === 'function') p.catch(() => {});
+    } catch(e) {}
+  }
+}
+
+function syncFsIcon() {
+  const btn = document.getElementById('fs-btn');
+  if (!btn) return;
+  const inFs = !!fsElement();
+  btn.textContent = inFs ? '✕ EXIT' : '⛶ FULLSCREEN';
+  btn.title = inFs ? 'Exit Fullscreen' : 'Enter Fullscreen';
+}
+
+// Hide fullscreen button on phones; show on tablets/desktop
+function applyDeviceUI() {
+  const btn = document.getElementById('fs-btn');
+  if (btn) btn.style.display = isPhone() ? 'none' : 'flex';
+}
+
+['fullscreenchange','webkitfullscreenchange','mozfullscreenchange','MSFullscreenChange'].forEach(evt => {
+  document.addEventListener(evt, syncFsIcon);
+});
+window.addEventListener('resize', applyDeviceUI);
+
+// Apply on load
+applyDeviceUI();
+syncFsIcon();
+
+// ── startGame — simple, no fullscreen auto-trigger ──
+function startGame() {
+  AC();
+  show('s-stage');
+}
+
+// ═══════════════════════════════════════════════════════
+// SCORE SHARE CARD
+// Populates share card on both victory (result) and defeat (over) screens
+// ═══════════════════════════════════════════════════════
+function populateShareCard(score, stageNum, stageName, screen) {
+  const formUrl = 'https://forms.gle/6vdTMd77UYX7uyqo6';
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(formUrl)}`;
+
+  // WhatsApp message per spec
+  const waMsg = encodeURIComponent(
+    `I scored ${score} points on Stage ${stageNum} in Synthesis Quest by Vantage Tutor! Visit vantagetutor.com to play!`
+  );
+  const waUrl = `https://wa.me/?text=${waMsg}`;
+
+  // Telegram message per spec
+  const tgMsg = encodeURIComponent(`I scored ${score} points on Synthesis Quest by Vantage Tutor!`);
+  const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(formUrl)}&text=${tgMsg}`;
+
+  if (screen === 'result') {
+    const qrEl = document.getElementById('share-qr');
+    if (qrEl) qrEl.src = qrUrl;
+    const wa = document.getElementById('share-wa');
+    const tg = document.getElementById('share-tg');
+    if (wa) wa.href = waUrl;
+    if (tg) tg.href = tgUrl;
+  } else if (screen === 'over') {
+    const qrEl = document.getElementById('over-share-qr');
+    if (qrEl) qrEl.src = qrUrl;
+    const wa = document.getElementById('over-share-wa');
+    const tg = document.getElementById('over-share-tg');
+    if (wa) wa.href = waUrl;
+    if (tg) tg.href = tgUrl;
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function shuffle(a){
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+document.getElementById('player-name').addEventListener('keydown',e=>{if(e.key==='Enter')startGame();});
+document.getElementById('s-game').addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+</script>
+</body>
+</html>
